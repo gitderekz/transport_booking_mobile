@@ -98,7 +98,14 @@ class BookingStarted extends BookingEvent {
   });
 
   @override
-  List<Object> get props => [from, to, date];
+  List<Object> get props => [from, to, date??''/*DateTime.fromMillisecondsSinceEpoch(0)*/];
 }
 
+class DownloadTicket extends BookingEvent {
+  final String bookingId;
 
+  const DownloadTicket({required this.bookingId});
+
+  @override
+  List<Object> get props => [bookingId];
+}

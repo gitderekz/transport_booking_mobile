@@ -18,6 +18,13 @@ class _LoginPageState extends State<LoginPage> {
   bool _useEmail = true;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _emailController.text = 'john.doe1@example.com';
+    _passwordController.text = 'password123';
+  }
+  @override
   void dispose() {
     _emailController.dispose();
     _phoneController.dispose();

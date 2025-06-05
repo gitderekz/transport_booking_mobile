@@ -182,6 +182,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         final seats = widget.selectedSeats.map((seat) => {
                           'seat_number': seat,
                           'passenger_name': _nameController.text,
+                          'passenger_age': null,
+                          'passenger_gender': null,
                         }).toList();
 
                         // final booking = Booking(
@@ -192,7 +194,6 @@ class _PaymentPageState extends State<PaymentPage> {
                         //   seats: seats,
                         //   // You may need to fill in userId, date, price, etc., depending on your Booking model
                         // );
-
                         context.read<BookingBloc>().add(
                           BookingSubmitted(
                             routeId: widget.route.id,

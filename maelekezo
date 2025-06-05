@@ -1,974 +1,236 @@
-I'M CONFUSED, THESE ARE MY ORIGINAL CODES SO LETS INTEGRATE NEW CODES NOW
+const { pool } = require('../config/db');
+const { generateBookingReference } = require('../utils/helpers');
 
-
-lib/blocs/theme/theme_event.dart
-.
-.
-.
-lib/blocs/theme/theme_state.dart
-.
-.
-.
-lib/blocs/theme/theme_bloc.dart
-.
-.
-.
-lib/blocs/language/language_event.dart
-.
-.
-.
-lib/blocs/language/language_state.dart
-.
-.
-.
-lib/blocs/language/language_bloc.dart
-.
-.
-.
-
-
-
-
-****************************************88
---->let's solve these[
--The method 'getUserBookings' isn't defined for the type 'BookingRepository'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'getUserBookings'.
--The argument type 'Either<InvalidType, Booking>' can't be assigned to the parameter type 'Booking'. (Documentation) ON [final booking = await bookingRepository.createBooking(
-                                                                                                                                 routeId: event.routeId,
-                                                                                                                                 transportId: event.transportId,
-                                                                                                                                 pickupStopId: event.pickupStopId,
-                                                                                                                                 dropoffStopId: event.dropoffStopId,
-                                                                                                                                 seats: event.seats,
-                                                                                                                               );
-                                                                                                                               emit(BookingCreated(booking: booking));]
--The method 'cancelBooking' isn't defined for the type 'BookingRepository'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'cancelBooking'.
--The method 'saveLanguagePreference' isn't defined for the type 'LocalStorage'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'saveLanguagePreference'.
--The method 'toJson' isn't defined for the type 'User'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'toJson'.
--The method 'getLanguagePreference' isn't defined for the type 'LocalStorage'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'getLanguagePreference'.
--The name 'BookingSubmissionSuccess' isn't defined, so it can't be used in an 'is' expression. (Documentation)  Try changing the name to the name of an existing type, or creating a type with the name 'BookingSubmissionSuccess'.
--The name 'BookingSubmissionFailure' isn't defined, so it can't be used in an 'is' expression. (Documentation)  Try changing the name to the name of an existing type, or creating a type with the name 'BookingSubmissionFailure'.
--The name 'BookingSubmissionInProgress' isn't defined, so it can't be used in an 'is' expression. (Documentation)  Try changing the name to the name of an existing type, or creating a type with the name 'BookingSubmissionInProgress'.
--The method 'BookingSubmitted' isn't defined for the type '_PaymentPageState'. (Documentation)  Try correcting the name to the name of an existing method, or defining a method named 'BookingSubmitted'.
--The named parameter 'selectedSeats' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
--The name 'Route' is defined in the libraries 'package:flutter/src/widgets/navigator.dart' and 'package:transport_booking/models/route.dart'. (Documentation)  Try using 'as prefix' for one of the import directives, or hiding the name from all but one of the imports.
--The named parameter 'dropoffStopId' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
- The named parameter 'pickupStopId' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument. ON [BookingStopsSelected(
-                                                                                                                                                                   pickupStop: _pickupStop!,
-                                                                                                                                                                   dropoffStop: _dropoffStop!,
-                                                                                                                                                                 ),]
--The name 'ThemeLoadSuccess' isn't defined, so it can't be used in an 'is' expression. (Documentation)  Try changing the name to the name of an existing type, or creating a type with the name 'ThemeLoadSuccess'.
--The named parameter 'isDarkMode' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
- The argument type 'ThemeChanged' can't be assigned to the parameter type 'ThemeEvent'. (Documentation)
--The named parameter 'locale' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
- The argument type 'LanguageChanged' can't be assigned to the parameter type 'LanguageEvent'. (Documentation)
--The name 'LanguageLoadSuccess' isn't defined, so it can't be used in an 'is' expression. (Documentation)  Try changing the name to the name of an existing type, or creating a type with the name 'LanguageLoadSuccess'.
--The named parameter 'locale' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
- The argument type 'LanguageChanged' can't be assigned to the parameter type 'LanguageEvent'. (Documentation)
--The named parameter 'localStorage' is required, but there's no corresponding argument. (Documentation)  Try adding the required argument.
--
-]
-
-given
---->lib/repositories/booking_repository.dart
-import 'package:dartz/dartz.dart';
-
-import '../../models/booking.dart';
-import '../../models/route.dart';
-import '../../services/api_service.dart';
-import '../../utils/failure.dart';
-
-class BookingRepository {
-  final ApiService apiService;
-
-  BookingRepository({required this.apiService});
-
-  Future<Either<Failure, List<Route>>> searchRoutes({
-    required String from,
-    required String to,
-    DateTime? date,
-  }) async {
+module.exports = {
+  createBooking: async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-      final response = await apiService.get('/transports/routes/search', params: {
-        'from': from,
-        'to': to,
-        if (date != null) 'date': date.toIso8601String(),
-      });
-
-      final routes = (response['data'] as List)
-          .map((json) => Route.fromJson(json))
-          .toList();
-
-      return Right(routes);
-    } catch (e) {
-      return Left(Failure(message: e.toString()));
-    }
-  }
-
-  Future<Either<Failure, Booking>> createBooking({
-    required String routeId,
-    required String transportId,
-    required String pickupStopId,
-    required String dropoffStopId,
-    required List<Map<String, dynamic>> seats,
-  }) async {
-    try {
-      final response = await apiService.post('/bookings', {
-        'route_id': routeId,
-        'transport_id': transportId,
-        'pickup_stop_id': pickupStopId,
-        'dropoff_stop_id': dropoffStopId,
-        'seats': seats,
-      });
-
-      final booking = Booking.fromJson(response['data']);
-      return Right(booking);
-    } catch (e) {
-      return Left(Failure(message: e.toString()));
-    }
-  }
-}
-
-
---->lib/blocs/booking/booking_bloc.dart
-import 'dart:async';
-import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:transport_booking/models/booking.dart';
-import 'package:transport_booking/repositories/booking_repository.dart';
-
-part 'booking_event.dart';
-part 'booking_state.dart';
-
-class BookingBloc extends Bloc<BookingEvent, BookingState> {
-  final BookingRepository bookingRepository;
-
-  BookingBloc({required this.bookingRepository}) : super(BookingInitial()) {
-    on<LoadBookings>(_onLoadBookings);
-    on<CreateBooking>(_onCreateBooking);
-    on<CancelBooking>(_onCancelBooking);
-    on<BookingSeatsSelected>(_onSeatsSelected);
-    on<BookingStopsSelected>(_onStopsSelected);
-  }
-
-  FutureOr<void> _onLoadBookings(
-      LoadBookings event,
-      Emitter<BookingState> emit,
-      ) async {
-    emit(BookingLoading());
-    try {
-      final bookings = await bookingRepository.getUserBookings();
-      emit(BookingsLoaded(bookings: bookings));
-    } catch (e) {
-      emit(BookingError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onCreateBooking(
-      CreateBooking event,
-      Emitter<BookingState> emit,
-      ) async {
-    emit(BookingLoading());
-    try {
-      final booking = await bookingRepository.createBooking(
-        routeId: event.routeId,
-        transportId: event.transportId,
-        pickupStopId: event.pickupStopId,
-        dropoffStopId: event.dropoffStopId,
-        seats: event.seats,
+      await connection.beginTransaction();
+      
+      const { userId } = req.user;
+      const { routeId, transportId, pickupStopId, dropoffStopId, seats } = req.body;
+      console.log('REQ: ', routeId, transportId, pickupStopId, dropoffStopId, seats);
+      // Validate route and stops
+      const [route] = await connection.execute(
+        `SELECT r.*, t.type, t.name as transport_name, t.total_seats, t.seat_layout
+         FROM routes r
+         JOIN transports t ON r.transport_id = t.id
+         WHERE r.id = ? AND r.transport_id = ?`,
+        [routeId, transportId]
       );
-      emit(BookingCreated(booking: booking));
-    } catch (e) {
-      emit(BookingError(message: e.toString()));
-    }
-  }
+      
+      if (route.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ error: 'Route not found' });
+      }
+      
+      // Validate stops belong to the route
+      const [stops] = await connection.execute(
+        'SELECT id, sequence_order FROM stops WHERE route_id = ? AND id IN (?, ?)',
+        [routeId, pickupStopId, dropoffStopId]
+      );
+      
+      if (stops.length !== 2) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Invalid pickup or dropoff stop' });
+      }
+      
+      const pickupStop = stops.find(s => s.id == pickupStopId);
+      const dropoffStop = stops.find(s => s.id == dropoffStopId);
+      
+      if (pickupStop.sequence_order >= dropoffStop.sequence_order) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Pickup must be before dropoff' });
+      }
+      
+      //// Validate seats
+      //const seatNumbers = seats.map(s => s.seatNumber);
+      //const [existingBookings] = await connection.execute(
+      //  `SELECT bs.seat_number 
+      //   FROM booked_seats bs
+      //   JOIN bookings b ON bs.booking_id = b.id
+      //   WHERE b.route_id = ? AND b.status IN ('confirmed', 'pending')
+      //   AND bs.seat_number IN (?)`,
+      //  [routeId, seatNumbers]
+      //);
+const seatNumbers = seats.map(s => s.seat_number);
 
-  FutureOr<void> _onCancelBooking(
-      CancelBooking event,
-      Emitter<BookingState> emit,
-      ) async {
-    emit(BookingLoading());
-    try {
-      await bookingRepository.cancelBooking(event.bookingId);
-      emit(BookingCancelled());
-      add(LoadBookings());
-    } catch (e) {
-      emit(BookingError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onSeatsSelected(
-      BookingSeatsSelected event,
-      Emitter<BookingState> emit,
-      ) {
-    emit(BookingSeatsSelectedState(selectedSeats: event.selectedSeats));
-  }
-
-  FutureOr<void> _onStopsSelected(
-      BookingStopsSelected event,
-      Emitter<BookingState> emit,
-      ) {
-    emit(BookingStopsSelectedState(
-      pickupStopId: event.pickupStopId,
-      dropoffStopId: event.dropoffStopId,
-    ));
-  }
+// Guard: prevent empty list crash
+if (!seatNumbers.length) {
+  await connection.rollback();
+  return res.status(400).json({ error: 'No seats provided' });
 }
 
+// Dynamically build placeholders
+const seatPlaceholders = seatNumbers.map(() => '?').join(', ');
 
---->lib/services/local_storage.dart
-import 'dart:convert';
+const [existingBookings] = await connection.execute(
+  `SELECT bs.seat_number 
+   FROM booked_seats bs
+   JOIN bookings b ON bs.booking_id = b.id
+   WHERE b.route_id = ? AND b.status IN ('confirmed', 'pending')
+   AND bs.seat_number IN (${seatPlaceholders})`,
+  [routeId, ...seatNumbers] // ✅ spread seat numbers
+);
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+      
+      if (existingBookings.length > 0) {
+        await connection.rollback();
+        return res.status(409).json({ 
+          error: 'Some seats are already booked',
+          bookedSeats: existingBookings.map(b => b.seat_number)
+        });
+      }
+      
+      // Calculate price (simplified - you'd implement proper pricing logic)
+      const basePrice = route[0].base_price;
+      const totalPrice = basePrice * seats.length;
+      
+      // Create booking
+      const bookingRef = generateBookingReference();
+      const [bookingResult] = await connection.execute(
+        `INSERT INTO bookings (
+          booking_reference, user_id, route_id, transport_id, 
+          pickup_stop_id, dropoff_stop_id, total_price
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [bookingRef, userId, routeId, transportId, pickupStopId, dropoffStopId, totalPrice]
+      );
+      
+      const bookingId = bookingResult.insertId;
+      
+      //// Book seats
+      //for (const seat of seats) {
+      //  await connection.execute(
+      //    `INSERT INTO booked_seats (
+      //      booking_id, seat_number, passenger_name, passenger_age, passenger_gender
+      //    ) VALUES (?, ?, ?, ?, ?)`,
+      //    [bookingId, seat.seatNumber, seat.passengerName, seat.passengerAge, seat.passengerGender]
+      //  );
+      //}
+for (const seat of seats) {
+  const seatNumber = seat.seat_number ?? null;
+  const passengerName = seat.passenger_name ?? null;
+  const passengerAge = seat.passenger_age ?? null;
+  const passengerGender = seat.passenger_gender ?? null;
 
-import '../models/user.dart';
-
-class LocalStorage {
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  final SharedPreferences? _prefs;
-
-  LocalStorage([this._prefs]);
-
-  Future<void> init() async {
-    if (_prefs == null) {
-      await SharedPreferences.getInstance();
-    }
+  if (!seatNumber || !passengerName) {
+    await connection.rollback();
+    return res.status(400).json({ error: 'Missing seat number or passenger name' });
   }
 
-  Future<void> setToken(String token) async {
-    await _secureStorage.write(key: 'token', value: token);
-  }
-
-  Future<String?> getToken() async {
-    return await _secureStorage.read(key: 'token');
-  }
-
-  Future<void> setUser(User user) async {
-    await _secureStorage.write(key: 'user', value: user.toJson().toString());
-  }
-
-  Future<User?> getUser() async {
-    final userJson = await _secureStorage.read(key: 'user');
-    if (userJson == null) return null;
-    return User.fromJson(jsonDecode(userJson));
-  }
-
-  Future<void> setTheme(String themeMode) async {
-    await _prefs?.setString('theme', themeMode);
-  }
-
-  Future<String?> getTheme() async {
-    return _prefs?.getString('theme');
-  }
-
-  Future<void> setLanguage(String languageCode) async {
-    await _prefs?.setString('language', languageCode);
-  }
-
-  Future<String?> getLanguage() async {
-    return _prefs?.getString('language');
-  }
-
-  Future<void> clear() async {
-    await _secureStorage.deleteAll();
-    await _prefs?.clear();
-  }
-}
-
-
---->lib/models/user.dart
-import 'package:equatable/equatable.dart';
-
-class User extends Equatable {
-  final String id;
-  final String uuid;
-  final String? email;
-  final String? phone;
-  final String firstName;
-  final String lastName;
-  final bool isVerified;
-  final String languagePref;
-  final String themePref;
-  final String? profilePicture;
-
-  const User({
-    required this.id,
-    required this.uuid,
-    this.email,
-    this.phone,
-    required this.firstName,
-    required this.lastName,
-    required this.isVerified,
-    required this.languagePref,
-    required this.themePref,
-    this.profilePicture,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'].toString(),
-      uuid: json['uuid'],
-      email: json['email'],
-      phone: json['phone'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      isVerified: json['is_verified'] ?? false,
-      languagePref: json['language_pref'] ?? 'en',
-      themePref: json['theme_pref'] ?? 'system',
-      profilePicture: json['profile_picture'],
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-    id,
-    uuid,
-    email,
-    phone,
-    firstName,
-    lastName,
-    isVerified,
-    languagePref,
-    themePref,
-    profilePicture,
-  ];
-}
-
-
---->lib/pages/booking/payment_page.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../blocs/booking/booking_bloc.dart';
-import '../../models/route.dart';
-import '../../models/transport.dart';
-import '../../utils/localization/app_localizations.dart';
-
-class PaymentPage extends StatefulWidget {
-  final Route route;
-  final Transport transport;
-  final List<String> selectedSeats;
-  final String pickupStop;
-  final String dropoffStop;
-
-  const PaymentPage({
-    super.key,
-    required this.route,
-    required this.transport,
-    required this.selectedSeats,
-    required this.pickupStop,
-    required this.dropoffStop,
-  });
-
-  @override
-  State<PaymentPage> createState() => _PaymentPageState();
-}
-
-class _PaymentPageState extends State<PaymentPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _cardNumberController = TextEditingController();
-  final _expiryDateController = TextEditingController();
-  final _cvvController = TextEditingController();
-  final _nameController = TextEditingController();
-
-  @override
-  void dispose() {
-    _cardNumberController.dispose();
-    _expiryDateController.dispose();
-    _cvvController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.translate('payment')!),
-      ),
-      body: BlocListener<BookingBloc, BookingState>(
-        listener: (context, state) {
-          if (state is BookingSubmissionSuccess) {
-            Navigator.pushReplacementNamed(
-              context,
-              '/booking/confirmation',
-              arguments: {'booking': state.booking},
-            );
-          } else if (state is BookingSubmissionFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error)),
-            );
-          }
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${widget.transport.name} - ${widget.transport.type.toUpperCase()}',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${widget.route.origin} to ${widget.route.destination}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${widget.selectedSeats.length} ${AppLocalizations.of(context)!.translate('seats')!}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${AppLocalizations.of(context)!.translate('pickup')!}: ${widget.pickupStop}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${AppLocalizations.of(context)!.translate('dropoff')!}: ${widget.dropoffStop}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 24),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _cardNumberController,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!
-                            .translate('card_number')!,
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context)!
-                              .translate('card_number_required')!;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _expiryDateController,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context)!
-                                  .translate('expiry_date')!,
-                            ),
-                            keyboardType: TextInputType.datetime,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!
-                                    .translate('expiry_date_required')!;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _cvvController,
-                            decoration: InputDecoration(
-                              labelText:
-                              AppLocalizations.of(context)!.translate('cvv')!,
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!
-                                    .translate('cvv_required')!;
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!
-                            .translate('cardholder_name')!,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context)!
-                              .translate('cardholder_name_required')!;
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              BlocBuilder<BookingBloc, BookingState>(
-                builder: (context, state) {
-                  if (state is BookingSubmissionInProgress) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        final seats = widget.selectedSeats.map((seat) => {
-                          'seat_number': seat,
-                          'passenger_name': _nameController.text,
-                        }).toList();
-
-                        context.read<BookingBloc>().add(
-                          BookingSubmitted(
-                            routeId: widget.route.id,
-                            transportId: widget.transport.id,
-                            pickupStopId: widget.pickupStop,
-                            dropoffStopId: widget.dropoffStop,
-                            seats: seats,
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(
-                        AppLocalizations.of(context)!.translate('pay_now')!),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
---->lib/blocs/booking/booking_event.dart
-part of 'booking_bloc.dart';
-
-abstract class BookingEvent extends Equatable {
-  const BookingEvent();
-
-  @override
-  List<Object> get props => [];
-}
-
-class LoadBookings extends BookingEvent {}
-
-class CreateBooking extends BookingEvent {
-  final String routeId;
-  final String transportId;
-  final String pickupStopId;
-  final String dropoffStopId;
-  final List<Map<String, dynamic>> seats;
-
-  const CreateBooking({
-    required this.routeId,
-    required this.transportId,
-    required this.pickupStopId,
-    required this.dropoffStopId,
-    required this.seats,
-  });
-
-  @override
-  List<Object> get props => [routeId, transportId, pickupStopId, dropoffStopId, seats];
-}
-
-class CancelBooking extends BookingEvent {
-  final String bookingId;
-
-  const CancelBooking({required this.bookingId});
-
-  @override
-  List<Object> get props => [bookingId];
-}
-
-class BookingSeatsSelected extends BookingEvent {
-  final List<String> selectedSeats;
-
-  const BookingSeatsSelected({required this.selectedSeats});
-
-  @override
-  List<Object> get props => [selectedSeats];
-}
-
-class BookingStopsSelected extends BookingEvent {
-  final String pickupStopId;
-  final String dropoffStopId;
-
-  const BookingStopsSelected({
-    required this.pickupStopId,
-    required this.dropoffStopId,
-  });
-
-  @override
-  List<Object> get props => [pickupStopId, dropoffStopId];
-}
-
-
---->lib/pages/settings/settings_page.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/language/language_bloc.dart';
-import '../../blocs/theme/theme_bloc.dart';
-import '../../config/routes.dart';
-import '../../utils/localization/app_localizations.dart';
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.translate('settings')!),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('appearance')!,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            BlocBuilder<ThemeBloc, ThemeState>(
-              builder: (context, state) {
-                return Column(
-                  children: [
-                    RadioListTile<ThemeMode>(
-                      title: Text(
-                          AppLocalizations.of(context)!.translate('light_theme')!),
-                      value: ThemeMode.light,
-                      groupValue: state is ThemeLoadSuccess ? state.themeMode : ThemeMode.system,
-                      onChanged: (value) {
-                        if (value != null) {
-                          context.read<ThemeBloc>().add(ThemeChanged(value));
-                        }
-                      },
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text(
-                          AppLocalizations.of(context)!.translate('dark_theme')!),
-                      value: ThemeMode.dark,
-                      groupValue: state is ThemeLoadSuccess ? state.themeMode : ThemeMode.system,
-                      onChanged: (value) {
-                        if (value != null) {
-                          context.read<ThemeBloc>().add(ThemeChanged(value));
-                        }
-                      },
-                    ),
-                    RadioListTile<ThemeMode>(
-                      title: Text(
-                          AppLocalizations.of(context)!.translate('system_theme')!),
-                      value: ThemeMode.system,
-                      groupValue: state is ThemeLoadSuccess ? state.themeMode : ThemeMode.system,
-                      onChanged: (value) {
-                        if (value != null) {
-                          context.read<ThemeBloc>().add(ThemeChanged(value));
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 32),
-            Text(
-              AppLocalizations.of(context)!.translate('language')!,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            BlocBuilder<LanguageBloc, LanguageState>(
-              builder: (context, state) {
-                return Column(
-                  children: [
-                    RadioListTile<String>(
-                      title: const Text('English'),
-                      value: 'en',
-                      groupValue: state is LanguageLoadSuccess ? state.locale.languageCode : 'en',
-                      onChanged: (value) {
-                        if (value != null) {
-                          context
-                              .read<LanguageBloc>()
-                              .add(LanguageChanged(Locale(value)));
-                        }
-                      },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Swahili'),
-                      value: 'sw',
-                      groupValue: state is LanguageLoadSuccess ? state.locale.languageCode : 'en',
-                      onChanged: (value) {
-                        if (value != null) {
-                          context
-                              .read<LanguageBloc>()
-                              .add(LanguageChanged(Locale(value)));
-                        }
-                      },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Spanish'),
-                      value: 'es',
-                      groupValue: state is LanguageLoadSuccess ? state.locale.languageCode : 'en',
-                      onChanged: (value) {
-                        if (value != null) {
-                          context
-                              .read<LanguageBloc>()
-                              .add(LanguageChanged(Locale(value)));
-                        }
-                      },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('French'),
-                      value: 'fr',
-                      groupValue: state is LanguageLoadSuccess ? state.locale.languageCode : 'en',
-                      onChanged: (value) {
-                        if (value != null) {
-                          context
-                              .read<LanguageBloc>()
-                              .add(LanguageChanged(Locale(value)));
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 32),
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return Center(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      onPressed: () {
-                        context.read<AuthBloc>().add(AuthLogoutRequested());
-                        Navigator.pushReplacementNamed(
-                            context, AppRoutes.onboarding);
-                      },
-                      child: Text(
-                          AppLocalizations.of(context)!.translate('logout')!),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
---->lib/models/route.dart
-import 'package:equatable/equatable.dart';
-
-class Route extends Equatable {
-  final String id;
-  final String transportId;
-  final String origin;
-  final String destination;
-  final double basePrice;
-  final int durationMinutes;
-  final List<Map<String, dynamic>> stops;
-
-  const Route({
-    required this.id,
-    required this.transportId,
-    required this.origin,
-    required this.destination,
-    required this.basePrice,
-    required this.durationMinutes,
-    required this.stops,
-  });
-
-  factory Route.fromJson(Map<String, dynamic> json) {
-    return Route(
-      id: json['id'].toString(),
-      transportId: json['transport_id'].toString(),
-      origin: json['origin'],
-      destination: json['destination'],
-      basePrice: double.parse(json['base_price'].toString()),
-      durationMinutes: int.parse(json['duration_minutes'].toString()),
-      stops: List<Map<String, dynamic>>.from(json['stops'] ?? []),
-    );
-  }
-
-  @override
-  List<Object> get props => [
-    id,
-    transportId,
-    origin,
-    destination,
-    basePrice,
-    durationMinutes,
-    stops,
-  ];
-}
-
-
---->lib/main.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-
-import 'blocs/auth/auth_bloc.dart';
-import 'blocs/language/language_bloc.dart';
-import 'blocs/theme/theme_bloc.dart';
-import 'config/routes.dart';
-import 'config/theme.dart';
-import 'repositories/auth_repository.dart';
-import 'repositories/transport_repository.dart';
-import 'services/api_service.dart';
-import 'services/local_storage.dart';
-import 'utils/localization/app_localizations.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final localStorage = LocalStorage();
-  await localStorage.init();
-
-  final apiService = ApiService();
-  final authRepository = AuthRepository(apiService: apiService, localStorage: localStorage);
-  final transportRepository = TransportRepository(apiService: apiService);
-
-  runApp(
-    MultiRepositoryProvider(
-      providers: [
-        RepositoryProvider.value(value: localStorage),
-        RepositoryProvider.value(value: apiService),
-        RepositoryProvider.value(value: authRepository),
-        RepositoryProvider.value(value: transportRepository),
-      ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (context) => ThemeBloc(localStorage: localStorage),
-          ),
-          BlocProvider(
-            create: (context) => LanguageBloc(localStorage: localStorage),
-          ),
-          BlocProvider(
-            create: (context) => AuthBloc(authRepository: authRepository),
-          ),
-        ],
-        child: const TransportBookingApp(),
-      ),
-    ),
+  await connection.execute(
+    `INSERT INTO booked_seats (
+      booking_id, seat_number, passenger_name, passenger_age, passenger_gender
+    ) VALUES (?, ?, ?, ?, ?)`,
+    [bookingId, seatNumber, passengerName, passengerAge, passengerGender]
   );
 }
 
-class TransportBookingApp extends StatelessWidget {
-  const TransportBookingApp({super.key});
+      
+      await connection.commit();
+      
+      // Get full booking details
+      const [booking] = await pool.execute(
+        `SELECT b.*, 
+         r.origin, r.destination, r.base_price,
+         t.type as transport_type, t.name as transport_name,
+         ps.station_name as pickup_station_name, ps.departure_time as pickup_time,
+         ds.station_name as dropoff_station_name, ds.arrival_time as dropoff_time
+         FROM bookings b
+         JOIN routes r ON b.route_id = r.id
+         JOIN transports t ON b.transport_id = t.id
+         JOIN stops ps ON b.pickup_stop_id = ps.id
+         JOIN stops ds ON b.dropoff_stop_id = ds.id
+         WHERE b.id = ?`,
+        [bookingId]
+      );
+      
+      res.status(201).json({
+        message: 'Booking created successfully',
+        booking: booking[0],
+        seatsBooked: seats.length
+      });
+    } catch (error) {
+      await connection.rollback();
+      console.error('Booking error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    } finally {
+      connection.release();
+    }
+  },
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ThemeBloc, ThemeState>(
-      builder: (context, themeState) {
-        return BlocBuilder<LanguageBloc, LanguageState>(
-          builder: (context, languageState) {
-            return MaterialApp(
-              title: 'Multi-Transport Booking',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeState.themeMode,
-              locale: languageState.locale,
-              supportedLocales: const [
-                Locale('en', 'US'), // English
-                Locale('sw', 'TZ'), // Swahili
-                Locale('es', 'ES'), // Spanish
-                Locale('fr', 'FR'), // French
-              ],
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              onGenerateRoute: AppRoutes.generateRoute,
-              initialRoute: AppRoutes.initialRoute,
-            );
-          },
+  getUserBookings: async (req, res) => {
+    try {
+      const { userId } = req.user;
+      
+      const [bookings] = await pool.execute(
+        `SELECT b.*, 
+         r.origin, r.destination, r.base_price,
+         t.type as transport_type, t.name as transport_name,
+         ps.station_name as pickup_station_name, ps.departure_time as pickup_time,
+         ds.station_name as dropoff_station_name, ds.arrival_time as dropoff_time
+         FROM bookings b
+         JOIN routes r ON b.route_id = r.id
+         JOIN transports t ON b.transport_id = t.id
+         JOIN stops ps ON b.pickup_stop_id = ps.id
+         JOIN stops ds ON b.dropoff_stop_id = ds.id
+         WHERE b.user_id = ?
+         ORDER BY b.created_at DESC`,
+        [userId]
+      );
+      
+      // Get booked seats for each booking
+      for (const booking of bookings) {
+        const [seats] = await pool.execute(
+          'SELECT * FROM booked_seats WHERE booking_id = ?',
+          [booking.id]
         );
-      },
-    );
+        booking.seats = seats;
+      }
+      
+      res.json(bookings);
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  getBookingDetails: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { userId } = req.user;
+      
+      const [bookings] = await pool.execute(
+        `SELECT b.*, 
+         r.origin, r.destination, r.base_price,
+         t.type as transport_type, t.name as transport_name,
+         ps.station_name as pickup_station_name, ps.departure_time as pickup_time,
+         ds.station_name as dropoff_station_name, ds.arrival_time as dropoff_time
+         FROM bookings b
+         JOIN routes r ON b.route_id = r.id
+         JOIN transports t ON b.transport_id = t.id
+         JOIN stops ps ON b.pickup_stop_id = ps.id
+         JOIN stops ds ON b.dropoff_stop_id = ds.id
+         WHERE b.id = ? AND b.user_id = ?`,
+        [id, userId]
+      );
+      
+      if (bookings.length === 0) {
+        return res.status(404).json({ error: 'Booking not found' });
+      }
+      
+      const [seats] = await pool.execute(
+        'SELECT * FROM booked_seats WHERE booking_id = ?',
+        [id]
+      );
+      
+      const booking = bookings[0];
+      booking.seats = seats;
+      
+      res.json(booking);
+    } catch (error) {
+      console.error('Error fetching booking details:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
-}
-
-
-------------------------------------------------------------------
-AFTER THAT LET US CREATE ALL REACT FRONTEND FILES IN FILE STRUCTURE
-src/
-├── api/
-│   ├── auth.js
-│   ├── transports.js
-│   └── bookings.js
-├── components/
-│   ├── auth/
-│   ├── booking/
-│   │   ├── SeatMap.jsx
-│   │   ├── StopSelector.jsx
-│   │   └── BookingStepper.jsx
-│   ├── common/
-│   │   ├── Header.jsx
-│   │   ├── Footer.jsx
-│   │   └── Loading.jsx
-│   ├── transports/
-│   │   ├── TransportCard.jsx
-│   │   └── TransportFilter.jsx
-│   └── ui/
-│       ├── ThemeToggle.jsx
-│       └── LanguageSelector.jsx
-├── contexts/
-│   ├── AuthContext.js
-│   ├── BookingContext.js
-│   ├── ThemeContext.js
-│   └── LanguageContext.js
-├── hooks/
-│   ├── useAuth.js
-│   ├── useBooking.js
-│   ├── useTheme.js
-│   └── useLanguage.js
-├── pages/
-│   ├── Auth/
-│   │   ├── Login.jsx
-│   │   └── Register.jsx
-│   ├── Booking/
-│   │   ├── Search.jsx
-│   │   ├── SeatSelection.jsx
-│   │   ├── StopSelection.jsx
-│   │   └── Confirmation.jsx
-│   ├── Home/
-│   │   └── Dashboard.jsx
-│   ├── Profile/
-│   │   └── Bookings.jsx
-│   └── Shared/
-│       ├── Layout.jsx
-│       └── NotFound.jsx
-├── styles/
-│   ├── themes/
-│   │   ├── light.js
-│   │   └── dark.js
-│   └── global.css
-├── utils/
-│   ├── constants.js
-│   ├── helpers.js
-│   └── http.js
-└── App.js
-
-
-!IMPORTANT
-"Hey DeepSeek, before we reset—summarize what we’ve done so I can paste it into a new chat!"
+};

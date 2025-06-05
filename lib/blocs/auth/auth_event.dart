@@ -50,3 +50,7 @@ class AuthRegisterRequested extends AuthEvent {
 class AuthLogoutRequested extends AuthEvent {}
 
 class AuthCheckStatus extends AuthEvent {}
+
+class AuthAutoLogin extends AuthEvent {
+  const AuthAutoLogin();
+}

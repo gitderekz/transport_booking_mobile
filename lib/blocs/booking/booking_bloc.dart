@@ -18,6 +18,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<CancelBooking>(_onCancelBooking);
     on<BookingSeatsSelected>(_onSeatsSelected);
     on<BookingStopsSelected>(_onStopsSelected);
+    on<BookingStarted>(_onBookingStarted);
+    on<BookingSubmitted>(_onBookingSubmitted);
   }
 
   FutureOr<void> _onLoadBookings(
@@ -91,4 +93,50 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       dropoffStopId: event.dropoffStopId,
     ));
   }
+
+  Future<void> _onBookingStarted(
+      BookingStarted event,
+      Emitter<BookingState> emit,
+      ) async {
+    emit(BookingLoading());
+    try {
+      final result = await bookingRepository.searchRoutes(
+        from: event.from,
+        to: event.to,
+        date: event.date,
+      );
+print('RESULT: ${result }');
+      result.fold(
+            (failure) => emit(BookingError(message: failure.message)),
+            (routes) => emit(BookingLoadSuccess(routes: routes)),
+      );
+    } catch (e) {
+      emit(BookingError(message: 'Failed to search routes: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onBookingSubmitted(
+      BookingSubmitted event,
+      Emitter<BookingState> emit,
+      ) async {
+    emit(BookingSubmissionInProgress());
+    try {
+      final result = await bookingRepository.createBooking(
+        routeId: event.routeId,
+        transportId: event.transportId,
+        pickupStopId: event.pickupStopId,
+        dropoffStopId: event.dropoffStopId,
+        seats: event.seats,
+      );
+
+      result.fold(
+            (failure) => emit(BookingSubmissionFailure(error: failure.message)),
+            (booking) => emit(BookingSubmissionSuccess(booking: booking)),
+      );
+    } catch (e) {
+      emit(BookingSubmissionFailure(error: e.toString()));
+    }
+  }
+
+
 }

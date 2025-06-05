@@ -8,6 +8,7 @@ import 'package:transport_booking/pages/home/home_page.dart';
 import 'package:transport_booking/pages/home/search_page.dart';
 import 'package:transport_booking/pages/onboarding/onboarding_page.dart';
 import 'package:transport_booking/pages/settings/settings_page.dart';
+import 'package:transport_booking/pages/tickets/tickets_page.dart';
 
 class AppRoutes {
   static const String initialRoute = '/';
@@ -16,10 +17,16 @@ class AppRoutes {
   static const String register = '/auth/register';
   static const String home = '/home';
   static const String search = '/search';
+  static const String tickets = '/tickets';
+  static const String profile = '/profile';
   static const String seatSelection = '/booking/seats';
   static const String stopSelection = '/booking/stops';
   static const String payment = '/booking/payment';
   static const String setting = '/settings';
+  static const String editProfile = '/profile/edit';
+  static const String help = '/help';
+  static const String privacy = '/privacy';
+  static const String bookingConfirmation = '/booking/confirmation';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -33,6 +40,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterPage());
       case home:
         return MaterialPageRoute(builder: (_) => const HomePage());
+      case tickets:
+        return MaterialPageRoute(builder: (_) => const TicketsPage());
+      // case profile:
+      //   return MaterialPageRoute(builder: (_) => const ProfilePage());
       case search:
         return MaterialPageRoute(builder: (_) => const SearchPage());
       case seatSelection:

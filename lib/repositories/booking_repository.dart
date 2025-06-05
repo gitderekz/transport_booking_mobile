@@ -16,14 +16,18 @@ class BookingRepository {
     DateTime? date,
   }) async {
     try {
+      print('SEARCH-ROUTES' );
       final response = await apiService.get('/transports/routes/search', params: {
         'from': from,
         'to': to,
         if (date != null) 'date': date.toIso8601String(),
       });
 
+      print('ROUTES2: ' );
       final routes = (response['data'] as List)
-          .map((json) => Route.fromJson(json))
+          // .map((json) => Route.fromJson(json))
+          // .toList();
+          .map((json) => Route.fromJson(json as Map<String, dynamic>))
           .toList();
 
       return Right(routes);
@@ -41,14 +45,14 @@ class BookingRepository {
   }) async {
     try {
       final response = await apiService.post('/bookings', {
-        'route_id': routeId,
-        'transport_id': transportId,
-        'pickup_stop_id': pickupStopId,
-        'dropoff_stop_id': dropoffStopId,
+        'routeId': routeId,
+        'transportId': transportId,
+        'pickupStopId': pickupStopId,
+        'dropoffStopId': dropoffStopId,
         'seats': seats,
       });
-
-      final booking = Booking.fromJson(response['data']);
+      print('booking=> ${response['booking']}');
+      final booking = Booking.fromJson(response['booking']);
       return Right(booking);
     } catch (e) {
       return Left(Failure(message: e.toString()));

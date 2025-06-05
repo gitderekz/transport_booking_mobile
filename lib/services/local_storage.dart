@@ -80,6 +80,8 @@ class LocalStorage {
   // Future<String?> getLanguagePreference() async {
   //   return _prefs?.getString('languageCode');
   // }
+  Future<void> setAuthToken(String token) async => await setToken(token);
+  Future<String?> getAuthToken() async => await getToken();
 }
 
 
