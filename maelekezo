@@ -1,489 +1,450 @@
-39,nyara,ajia  -koboko-
+Before you continue these are my current codes so just improve them to the max;
 
-
-
-Transform the whole app to be more futuristic,attractive,professional,SciFi and glassy
-*YOU CAN REPLICATE CODES FROM THIS OTHER APP(stock manager) CODES THAT I'VE PROVIDED BELOW
---->lib/main.dart
-// main.dart
+--->lib/pages/home/search_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:stock_manager/config/env.dart';
-import 'package:stock_manager/controllers/settings_controller.dart';
-import 'package:stock_manager/controllers/stock_controller.dart';
-import 'package:stock_manager/utils/auth_helper.dart';
-import 'package:stock_manager/utils/socket_service.dart';
-import 'config/routes.dart';
-import 'config/theme.dart';
-import 'config/localization.dart';
-import 'controllers/auth_controller.dart';
-import 'controllers/product_controller.dart';
-import 'controllers/theme_controller.dart';
-import 'controllers/language_controller.dart';
-import 'utils/database_helper.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-// import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:transport_booking/models/stop.dart';
+import 'package:transport_booking/models/transport.dart';
+import 'package:transport_booking/repositories/transport_repository.dart';
+import 'package:transport_booking/services/api_service.dart';
+import 'package:transport_booking/services/local_storage.dart';
 
+import '../../blocs/booking/booking_bloc.dart';
+import '../../widgets/transport_card.dart';
+import '../../utils/localization/app_localizations.dart';
 
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
 
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Env.init();
-
-  final prefs = await SharedPreferences.getInstance();
-  final dbHelper = DatabaseHelper.instance;
-  await dbHelper.database;
-
-  // Check if token exists
-  final token = await AuthHelper.getToken();//prefs.getString('auth_token');
-  final isLoggedIn = token != null && token.isNotEmpty;
-
-  runApp(MyApp(
-    prefs: prefs,
-    dbHelper: dbHelper,
-    isLoggedIn: isLoggedIn,
-  ));
+  @override
+  State<SearchPage> createState() => _SearchPageState();
 }
 
+class _SearchPageState extends State<SearchPage> {
+  DateTime? _selectedDate;
+  late TransportRepository _transportRepository;
+  final LocalStorage localStorage = LocalStorage();
 
-class MyApp extends StatelessWidget {
-  final SharedPreferences prefs;
-  final DatabaseHelper dbHelper;
-  final bool isLoggedIn;
+  List<Transport> _transports = [];
+  List<Stop> _stops = [];
+  Stop? _selectedFromStop;
+  Stop? _selectedToStop;
 
-  const MyApp({
-    required this.prefs,
-    required this.dbHelper,
-    required this.isLoggedIn,
-    Key? key,
-  }) : super(key: key);
+  @override
+  void initState() {
+    super.initState();
+    _transportRepository = TransportRepository(apiService: ApiService(localStorage: localStorage));
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    await _loadTransports();
+    await _loadStops();
+  }
+
+  Future<void> _loadTransports() async {
+    final result = await _transportRepository.getTransports();
+    print('TRANSPORT : ${result}');
+    result.fold(
+            (failure) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load transports: ${failure.message}')),
+            ),
+              (transports) => setState(() {
+            _transports = transports;
+          }),
+        );
+    }
+
+  Future<void> _loadStops() async {
+    final result = await _transportRepository.getAllStops();
+    result.fold(
+          (failure) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load stops: ${failure.message}'))),
+          (stops) => setState(() {
+        _stops = stops;
+      }),
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    SocketService().initialize(context);
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => ThemeCubit(prefs)),
-        BlocProvider(create: (_) => LanguageCubit(prefs)),
-        BlocProvider(create: (_) => AuthCubit(dbHelper)),
-        BlocProvider(create: (_) => ProductCubit(dbHelper)),
-        BlocProvider(create: (_) => StockCubit(dbHelper)),
-        BlocProvider(create: (_) => SettingsCubit()),
-      ],
-      child: BlocBuilder<ThemeCubit, ThemeState>(
-        builder: (context, themeState) {
-          return BlocBuilder<LanguageCubit, LanguageState>(
-            builder: (context, languageState) {
-              return MaterialApp(
-                title: 'Stock Management',
-                theme: themeState.isDarkMode ? darkTheme : lightTheme,
-                initialRoute: isLoggedIn ? '/home' : '/', // 👈 Choose route based on login state
-                onGenerateRoute: AppRoutes.generateRoute,
-                supportedLocales: AppLocalizations.supportedLocales,
-                locale: languageState.locale,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                debugShowCheckedModeBanner: false,
-              );
-            },
-          );
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('search')!),
+      ),
+      body: BlocListener<BookingBloc, BookingState>(
+        listener: (context, state) {
+          if (state is BookingError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)));
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // From Stop Dropdown
+              DropdownButtonFormField<Stop>(
+                value: _selectedFromStop,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.translate('from')!,
+                  prefixIcon: const Icon(Icons.location_on),
+                ),
+                items: _stops.map((stop) {
+                  return DropdownMenuItem<Stop>(
+                    value: stop,
+                    child: Text(stop.stationName),
+                  );
+                }).toList(),
+                onChanged: (Stop? newValue) {
+                  setState(() {
+                    _selectedFromStop = newValue;
+                    // Reset destination if it's the same as origin
+                    if (_selectedToStop == newValue) {
+                      _selectedToStop = null;
+                    }
+                  });
+                },
+                validator: (value) => value == null
+                    ? AppLocalizations.of(context)!.translate('select_departure')!
+                    : null,
+              ),
+              const SizedBox(height: 16),
+
+              // To Stop Dropdown
+              DropdownButtonFormField<Stop>(
+                value: _selectedToStop,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.translate('to')!,
+                  prefixIcon: const Icon(Icons.location_on),
+                ),
+                items: _stops
+                    .where((stop) => stop != _selectedFromStop)
+                    .map((stop) {
+                  return DropdownMenuItem<Stop>(
+                    value: stop,
+                    child: Text(stop.stationName),
+                  );
+                }).toList(),
+                onChanged: (Stop? newValue) {
+                  setState(() {
+                    _selectedToStop = newValue;
+                  });
+                },
+                validator: (value) => value == null
+                    ? AppLocalizations.of(context)!.translate('select_destination')!
+                    : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Date Selection
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _selectedDate == null
+                          ? AppLocalizations.of(context)!.translate('select_date')!
+                          : '${AppLocalizations.of(context)!.translate('date')!}: ${_selectedDate!.toLocal().toString().split(' ')[0]}',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: () => _selectDate(context),
+                    tooltip: AppLocalizations.of(context)!.translate('choose_date')!,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Search Button
+              ElevatedButton(
+                onPressed: () {
+                  if (_selectedFromStop == null || _selectedToStop == null || _selectedDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            AppLocalizations.of(context)!.translate('fill_all_fields')!),
+                      ),
+                    );
+                    return;
+                  }
+                  context.read<BookingBloc>().add(
+                    BookingStarted(
+                      from: _selectedFromStop!.stationName,
+                      to: _selectedToStop!.stationName,
+                      date: _selectedDate!,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(AppLocalizations.of(context)!.translate('search')!),
+              ),
+              const SizedBox(height: 24),
+
+              // Results
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  if (state is BookingLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is BookingLoadSuccess) {
+                    return Column(
+                      children: state.routes.map((route) {
+                        final transport = _transports.firstWhere(
+                              (t) => t.id == route.transportId,
+                          orElse: () => Transport.empty(),
+                        );
+                        return TransportCard(
+                          route: route,
+                          transport: transport,
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/booking/seats',
+                              arguments: {
+                                'route': route,
+                                'transport': transport,
+                              },
+                            );
+                          },
+                        );
+                      }).toList(),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+--->lib/pages/tickets/tickets_page.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../blocs/booking/booking_bloc.dart';
+import '../../models/booking.dart';
+import '../../utils/localization/app_localizations.dart';
+
+class TicketsPage extends StatefulWidget {
+  const TicketsPage({super.key});
+
+  @override
+  State<TicketsPage> createState() => _TicketsPageState();
+}
+
+class _TicketsPageState extends State<TicketsPage> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<BookingBloc>().add(LoadBookings());
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('tickets')!),
+      ),
+      body: BlocBuilder<BookingBloc, BookingState>(
+        builder: (context, state) {
+          if (state is BookingLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is BookingsLoaded) {
+            return ListView.builder(
+              itemCount: state.bookings.length,
+              itemBuilder: (context, index) {
+                final booking = state.bookings[index];
+                return BookingCard(booking: booking);
+              },
+            );
+          } else if (state is BookingError) {
+            return Center(child: Text(state.message));
+          }
+          return const Center(child: Text('No bookings found'));
         },
       ),
     );
   }
 }
 
---->lib/pages/main_navigation.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:stock_manager/pages/products_page.dart';
-import 'package:stock_manager/pages/settings_page.dart';
-import 'package:stock_manager/pages/tutorial_overlay.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../controllers/theme_controller.dart';
-import 'dashboard_page.dart';
-import 'inventory_page.dart';
+class BookingCard extends StatelessWidget {
+  final Booking booking;
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({Key? key}) : super(key: key);
+  const BookingCard({super.key, required this.booking});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Booking #${booking.bookingReference}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              booking.seats.isNotEmpty
+                  ? 'Seats: ${booking.seats.map((s) => s['seat_number']).join(', ')}'
+                  : 'No seats assigned',
+            ),
+            Text('Status: ${booking.status}'),
+            Text('Payment: ${booking.paymentStatus}'),
+            Text('Total: \$${booking.totalPrice.toStringAsFixed(2)}'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                context.read<BookingBloc>().add(CancelBooking(bookingId: booking.id));
+              },
+              child: Text(AppLocalizations.of(context)!.translate('cancel')!),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
-  late List<Widget> _pages;
+
+--->lib/pages/profile/profile_page.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:transport_booking/blocs/auth/auth_bloc.dart';
+import 'package:transport_booking/blocs/theme/theme_bloc.dart';
+import 'package:transport_booking/blocs/language/language_bloc.dart';
+import 'package:transport_booking/config/routes.dart';
+import 'package:transport_booking/models/user.dart';
+import 'package:transport_booking/repositories/user_repository.dart';
+import 'package:transport_booking/utils/localization/app_localizations.dart';
+
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  User? _user;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _pages = [
-      const DashboardPage(),
-      const ProductsPage(),
-      const InventoryPage(),
-      const SettingsPage(),
-    ];
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      TutorialOverlay.showTutorialIfNeeded(context);
-    });
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final userRepo = context.read<UserRepository>();
+    try {
+      final user = await userRepo.fetchProfile();
+      setState(() {
+        _user = user;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load profile')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: SafeArea(child: _pages[_currentIndex]),
-      floatingActionButton: _buildFloatingActionButton(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildBottomAppBar(context),
-    );
-  }
-
-  Widget _buildFloatingActionButton(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () => Navigator.pushNamed(context, '/add-product'),
-      backgroundColor: Theme
-          .of(context)
-          .colorScheme
-          .primary,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF6A3CBC),
-              Color(0xFF461B93),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xFF6A3CBC).withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.add, color: Colors.white), // <--- Move inside
-      ),
-
-    );
-  }
-
-  Widget _buildBottomAppBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 2,
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('profile')!),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              context.read<AuthBloc>().add(AuthLogoutRequested());
+              Navigator.pushNamedAndRemoveUntil(
+                context, AppRoutes.login, (route) => false,
+              );
+            },
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: BottomAppBar(
-          height: 70,
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
-          padding: EdgeInsets.zero,
-          color: Theme
-              .of(context)
-              .colorScheme
-              .surface,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(context, 0, Icons.home_outlined, AppLocalizations.of(context)?.dashboard??'Home'),
-              _buildNavItem(context, 1, Icons.inventory_2_outlined, AppLocalizations.of(context)?.products??'Products'),
-              const SizedBox(width: 40), // Space for FAB
-              _buildNavItem(context, 2, Icons.assessment_outlined, AppLocalizations.of(context)?.inventory??'Inventory'),
-              _buildNavItem(context, 3, Icons.settings_outlined, AppLocalizations.of(context)?.settings??'Settings'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _currentIndex = index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme
-                    .of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.1)
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: isSelected
-                    ? Theme
-                    .of(context)
-                    .colorScheme
-                    .primary
-                    : Theme
-                    .of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(
-                color: isSelected
-                    ? Theme
-                    .of(context)
-                    .colorScheme
-                    .primary
-                    : Theme
-                    .of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.6),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
---->lib/pages/dashboard_page.dart
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:stock_manager/models/stock_movement.dart';
-import 'package:stock_manager/utils/currency_helper.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
-import '../controllers/product_controller.dart';
-
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  bool _isDataFetched = false;
-  final formatter = NumberFormat.currency(symbol: 'Tsh ', decimalDigits: 2);
-
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      final productCubit = context.read<ProductCubit>();
-      if (!_isDataFetched) {
-        productCubit.fetchDashboardStats();
-        _isDataFetched = true;
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ProductCubit, ProductState>(
-      builder: (context, state) {
-        if (state is ProductLoading) {
-          return _buildLoadingState();
-        }
-
-        if (state is ProductError) {
-          return _buildErrorState(context, state);
-        }
-
-        if (state is ProductLoaded && state.stats != null) {
-          return RefreshIndicator(
-            onRefresh: () => context.read<ProductCubit>().fetchDashboardStats(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildStatsGrid(context, state),
-                  const SizedBox(height: 24),
-                  _buildSalesStats(context, state.stats!),
-                  const SizedBox(height: 24),
-                  _buildStockChart(state),
-                  const SizedBox(height: 24),
-                  // _buildStockTrendsChart(context,state.stats!),
-                  _buildSalesTrendChart(context,state.stats!),
-                  const SizedBox(height: 24),
-                  _buildRecentActivities(state),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return _buildErrorFallback(context);
-      },
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(height: 16),
-          Text('Loading dashboard...', style: Theme.of(context).textTheme.titleMedium),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, ProductError state) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-          const SizedBox(height: 16),
-          Text(state.message, style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.read<ProductCubit>().fetchDashboardStats(),
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(BuildContext context, ProductLoaded state) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      children: [
-        _buildStatCard(
-          context,
-          'Total Products',
-          state.stats?['totalProducts'].toString() ?? '0',
-          Icons.inventory_2_outlined,
-          const Color(0xFF6A3CBC),
-        ),
-        _buildStatCard(
-          context,
-          'Low Stock',
-          state.stats?['lowStockItems'].toString() ?? '0',
-          Icons.warning_amber_rounded,
-          const Color(0xFFFF7043),
-        ),
-        _buildStatCard(
-          context,
-          'Inventory Value',
-          // '${state.stats?['totalInventoryValue']?.toStringAsFixed(2) ?? '0'}\n${state.stats?['totalInventory'].toStringAsFixed(0)??""}(Items)',
-          '${formatter.format(state.stats?['totalInventoryValue'])??'0'}\nItems ${state.stats?['totalInventory'].toStringAsFixed(0)??""}',
-          Icons.attach_money_outlined,
-          const Color(0xFF4CAF50),
-        ),
-        _buildStatCard(
-          context,
-          'Avg. Stock',
-          state.stats?['averageStock']?.toStringAsFixed(1) ?? '0',
-          Icons.analytics_outlined,
-          const Color(0xFF2196F3),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.2), color.withOpacity(0.4)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _user == null
+          ? const Center(child: Text('User not found'))
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 24, color: color),
+            _buildUserCard(context),
+            const SizedBox(height: 24),
+            _buildPreferencesSection(context),
+            const SizedBox(height: 24),
+            _buildAccountActions(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserCard(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 40,
+              backgroundImage: AssetImage('assets/images/profile_placeholder.png'),
             ),
+            const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
+                  '${_user!.firstName} ${_user!.lastName}',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: title=='Inventory Value'?14:null,
-                      overflow: TextOverflow.ellipsis
-                  ),
+                  _user!.email ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.editProfile);
+                  },
+                  child: Text(AppLocalizations.of(context)!.translate('edit_profile')!),
                 ),
               ],
             ),
@@ -493,397 +454,55 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-
-  Widget _buildSalesStats(BuildContext context, Map<String, dynamic> stats) {
-    final sales = stats['sales'] ?? {
-      'today': {'quantity': 0, 'value': 0},
-      'weekly': {'quantity': 0, 'value': 0},
-      'monthly': {'quantity': 0, 'value': 0},
-      'yearly': {'quantity': 0, 'value': 0},
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Sales Analytics',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+  Widget _buildPreferencesSection(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('preferences')!,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMiniStatCard(
-                  context,
-                  'Today',
-                  '${sales['today']['quantity']}',
-                  '${CurrencyHelper.formatCurrency(context,double.parse(sales['today']['value'].toStringAsFixed(2)))}',
-                  const Color(0xFF6A3CBC),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMiniStatCard(
-                  context,
-                  'This Week',
-                  '${sales['weekly']['quantity']}',
-                  '${CurrencyHelper.formatCurrency(context,double.parse(sales['weekly']['value'].toStringAsFixed(2)))}',
-                  const Color(0xFF4CAF50),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMiniStatCard(
-                  context,
-                  'This Month',
-                  '${sales['monthly']['quantity']}',
-                  '${CurrencyHelper.formatCurrency(context,double.parse(sales['monthly']['value'].toStringAsFixed(2)))}',
-                  const Color(0xFF2196F3),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMiniStatCard(
-                  context,
-                  'This Year',
-                  '${sales['yearly']['quantity']}',
-                  '${CurrencyHelper.formatCurrency(context,double.parse(sales['yearly']['value'].toStringAsFixed(2)))}',
-                  const Color(0xFFFF7043),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniStatCard(BuildContext context, String title, String quantity, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color.withOpacity(0.1),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            quantity,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStockTrendsCharts(ProductLoaded state) {
-    // Sample data - replace with your actual trend data
-    final trendData = [
-      {'day': 'Mon', 'in': 12, 'out': 8},
-      {'day': 'Tue', 'in': 15, 'out': 10},
-      {'day': 'Wed', 'in': 8, 'out': 12},
-      {'day': 'Thu', 'in': 20, 'out': 5},
-      {'day': 'Fri', 'in': 10, 'out': 15},
-      {'day': 'Sat', 'in': 5, 'out': 3},
-      {'day': 'Sun', 'in': 2, 'out': 1},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Weekly Stock Trends',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: SfCartesianChart(
-              margin: EdgeInsets.zero,
-              primaryXAxis: CategoryAxis(
-                labelPlacement: LabelPlacement.onTicks,
-                majorGridLines: const MajorGridLines(width: 0),
-              ),
-              primaryYAxis: NumericAxis(
-                minimum: 0,
-                majorGridLines: const MajorGridLines(width: 0.5),
-              ),
-              series: <ChartSeries>[
-                LineSeries<Map<String, dynamic>, String>(
-                  dataSource: trendData,
-                  xValueMapper: (data, _) => data['day'],
-                  yValueMapper: (data, _) => data['in'],
-                  name: 'Stock In',
-                  color: const Color(0xFF4CAF50),
-                  markerSettings: const MarkerSettings(isVisible: true),
-                ),
-                LineSeries<Map<String, dynamic>, String>(
-                  dataSource: trendData,
-                  xValueMapper: (data, _) => data['day'],
-                  yValueMapper: (data, _) => data['out'],
-                  name: 'Stock Out',
-                  color: const Color(0xFFF44336),
-                  markerSettings: const MarkerSettings(isVisible: true),
-                ),
-              ],
-              legend: Legend(
-                isVisible: true,
-                position: LegendPosition.bottom,
-                overflowMode: LegendItemOverflowMode.wrap,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildSalesTrendChartss(BuildContext context, Map<String, dynamic> stats) {
-    final trendData = stats['salesTrend'] ?? [];
-    if (trendData.isEmpty) return const SizedBox();
-
-    return SizedBox(
-      height: 200,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: false),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index % 7 == 0 && index < trendData.length) {
-                    final date = trendData[index]['date'].split('-').sublist(1).join('/');
-                    return SideTitleWidget(
-                      axisSide: meta.axisSide,
-                      // meta: meta,
-                      child: Text(date, style: const TextStyle(fontSize: 10)),
+            const SizedBox(height: 16),
+            BlocBuilder<ThemeBloc, ThemeState>(
+              builder: (context, state) {
+                return SwitchListTile(
+                  title: Text(AppLocalizations.of(context)!.translate('dark_mode')!),
+                  value: Theme.of(context).brightness == Brightness.dark,
+                  onChanged: (value) {
+                    context.read<ThemeBloc>().add(
+                      ChangeTheme(themeMode: value ? ThemeMode.dark : ThemeMode.light),
                     );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    // meta: meta,
-                    child: Text('\$${value.toInt()}', style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
-            ),
-            rightTitles: AxisTitles(
-              axisNameWidget: const Text(
-                'Units Sold',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: Text('${value.toInt()}', style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
-            ),
-          ),
-          lineBarsData: [
-            // Value line (primary)
-            LineChartBarData(
-              spots: trendData.asMap().entries.map<FlSpot>((e) {
-                return FlSpot(
-                  e.key.toDouble(),
-                  (e.value['value'] ?? 0).toDouble(),
+                  },
                 );
-              }).toList(),
-              isCurved: true,
-              color: Theme.of(context).primaryColor,
-              barWidth: 2,
-              belowBarData: BarAreaData(show: false),
-              dotData: FlDotData(show: false),
-            ),
-            // Quantity line (secondary)
-            LineChartBarData(
-              spots: trendData.asMap().entries.map<FlSpot>((e) {
-                return FlSpot(
-                  e.key.toDouble(),
-                  (e.value['quantity'] ?? 0).toDouble(),
-                );
-              }).toList(),
-              isCurved: true,
-              color: Colors.orange,
-              barWidth: 2,
-              belowBarData: BarAreaData(show: false),
-              dotData: FlDotData(show: false),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSalesTrendChartsss(BuildContext context, Map<String, dynamic> stats) {
-    final trendData = stats['salesTrend'] ?? [];
-    if (trendData.isEmpty) return const SizedBox();
-
-    final valueSpots = trendData.asMap().entries.map<FlSpot>((e) {
-      return FlSpot(e.key.toDouble(), (e.value['value'] ?? 0).toDouble());
-    }).toList();
-
-    final quantitySpots = trendData.asMap().entries.map<FlSpot>((e) {
-      return FlSpot(e.key.toDouble(), (e.value['quantity'] ?? 0).toDouble());
-    }).toList();
-
-    return SizedBox(
-      height: 220,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: true, horizontalInterval: 1),
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: Colors.grey.shade800,
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((spot) {
-                  final isValueLine = spot.barIndex == 0;
-                  final label = isValueLine ? 'Revenue' : 'Units';
-                  return LineTooltipItem(
-                    '$label: ${spot.y.toInt()}',
-                    const TextStyle(color: Colors.white),
-                  );
-                }).toList();
               },
             ),
-          ),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              axisNameWidget: const Text('Tsh Value'),
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 48,
-                getTitlesWidget: (value, meta) {
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: Text('${value.toInt()}',
-                        style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
-            ),
-            rightTitles: AxisTitles(
-              axisNameWidget: const Text('Units'),
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 48,
-                getTitlesWidget: (value, meta) {
-                  return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: Text('${value.toInt()}',
-                        style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index % 7 == 0 && index < trendData.length) {
-                    final date = trendData[index]['date']
-                        .toString()
-                        .substring(5); // MM-DD
-                    return SideTitleWidget(
-                      axisSide: meta.axisSide,
-                      child: Text(date, style: const TextStyle(fontSize: 10)),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          lineBarsData: [
-            LineChartBarData(
-              spots: valueSpots,
-              isCurved: true,
-              color: Theme.of(context).primaryColor,
-              barWidth: 2,
-              belowBarData: BarAreaData(show: false),
-              dotData: FlDotData(show: false),
-            ),
-            LineChartBarData(
-              spots: quantitySpots,
-              isCurved: true,
-              color: Colors.orange,
-              barWidth: 2,
-              belowBarData: BarAreaData(show: false),
-              dotData: FlDotData(show: false),
+            BlocBuilder<LanguageBloc, LanguageState>(
+              builder: (context, state) {
+                return DropdownButtonFormField<String>(
+                  value: state is LanguageChanged ? state.locale.languageCode : 'en',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.translate('language')!,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'sw', child: Text('Swahili')),
+                    DropdownMenuItem(value: 'es', child: Text('Spanish')),
+                    DropdownMenuItem(value: 'fr', child: Text('French')),
+                  ],
+                  onChanged: (String? value) {
+                    if (value != null) {
+                      context.read<LanguageBloc>().add(
+                        ChangeLanguage(locale: Locale(value)),
+                      );
+                    }
+                  },
+                );
+              },
             ),
           ],
         ),
@@ -891,422 +510,680 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildSalesTrendChart(BuildContext context, Map<String, dynamic> stats) {
-    final List<Map<String, dynamic>> trendData =
-    (stats['salesTrend'] as List<dynamic>).cast<Map<String, dynamic>>();
+  Widget _buildAccountActions(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context)!.translate('account')!,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: Text(AppLocalizations.of(context)!.translate('booking_history')!),
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.tickets);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.help),
+              title: Text(AppLocalizations.of(context)!.translate('help')!),
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.help);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip),
+              title: Text(AppLocalizations.of(context)!.translate('privacy')!),
+              onTap: () {
+                Navigator.pushNamed(context, AppRoutes.privacy);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-    if (trendData.isEmpty) return const SizedBox();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
+--->lib/pages/booking/stops_selection_page.dart
+import 'package:flutter/material.dart'hide Route;
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../blocs/booking/booking_bloc.dart';
+import '../../models/route.dart';
+import '../../models/transport.dart';
+import '../../widgets/stop_timeline.dart';
+import '../../utils/localization/app_localizations.dart';
+
+class StopsSelectionPage extends StatefulWidget {
+  final Route route;
+  final Transport transport;
+  final List<String> selectedSeats;
+
+  const StopsSelectionPage({
+    super.key,
+    required this.route,
+    required this.transport,
+    required this.selectedSeats,
+  });
+
+  @override
+  State<StopsSelectionPage> createState() => _StopsSelectionPageState();
+}
+
+class _StopsSelectionPageState extends State<StopsSelectionPage> {
+  String? _pickupStop;
+  String? _dropoffStop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('select_stops')!),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.transport.name} - ${widget.transport.type.toUpperCase()}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${widget.route.origin} to ${widget.route.destination}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${widget.selectedSeats.length} ${AppLocalizations.of(context)!.translate('seats')!}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              AppLocalizations.of(context)!.translate('pickup_point')!,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ...widget.route.stops.map((stop) {
+              return RadioListTile<String>(
+                title: Text(stop.stationName),
+                subtitle: Text(stop.departureTime ?? ''),
+                value: stop.id,
+                groupValue: _pickupStop,
+                onChanged: (value) {
+                  setState(() {
+                    _pickupStop = value;
+                    if (_dropoffStop != null &&
+                        widget.route.stops
+                            .firstWhere((s) => s.id == _pickupStop)
+                            .sequenceOrder >=
+                            widget.route.stops
+                                .firstWhere((s) => s.id == _dropoffStop)
+                                .sequenceOrder) {
+                      _dropoffStop = null;
+                    }
+                  });
+                },
+              );
+            }),
+            const SizedBox(height: 24),
+            Text(
+              AppLocalizations.of(context)!.translate('dropoff_point')!,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ...widget.route.stops.map((stop) {
+              if (_pickupStop != null &&
+                  widget.route.stops
+                      .firstWhere((s) => s.id == _pickupStop)
+                      .sequenceOrder >=
+                      stop.sequenceOrder) {
+                return const SizedBox.shrink();
+              }
+              return RadioListTile<String>(
+                title: Text(stop.stationName),
+                subtitle: Text(stop.arrivalTime ?? ''),
+                value: stop.id,
+                groupValue: _dropoffStop,
+                onChanged: (value) {
+                  setState(() {
+                    _dropoffStop = value;
+                  });
+                },
+              );
+            }),
+            const SizedBox(height: 16),
+            StopTimeline(
+              stops: widget.route.stops,
+              pickupStopId: _pickupStop,
+              dropoffStopId: _dropoffStop,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _pickupStop != null && _dropoffStop != null
+                  ? () {
+                context.read<BookingBloc>().add(
+                  BookingStopsSelected(
+                    // pickupStopId: _pickupStop!.id,
+                    // dropoffStopId: _dropoffStop!.id,
+                    pickupStopId: _pickupStop!,
+                    dropoffStopId: _dropoffStop!,
+
+                  ),
+                );
+                Navigator.pushNamed(
+                  context,
+                  '/booking/payment',
+                  arguments: {
+                    'route': widget.route,
+                    'transport': widget.transport,
+                    'selectedSeats': widget.selectedSeats,
+                    'pickupStop': _pickupStop,
+                    'dropoffStop': _dropoffStop,
+                  },
+                );
+              }
+                  : null,
+              child: Text(
+                  AppLocalizations.of(context)!.translate('continue')!),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+--->lib/pages/booking/seat_selection_page.dart
+import 'package:flutter/material.dart'hide Route;
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../blocs/booking/booking_bloc.dart';
+import '../../../models/route.dart';
+import '../../../models/transport.dart';
+import '../../../widgets/seat_widget.dart';
+
+class SeatSelectionPage extends StatefulWidget {
+  final Route route;
+  final Transport transport;
+
+  const SeatSelectionPage({
+    super.key,
+    required this.route,
+    required this.transport,
+  });
+
+  @override
+  State<SeatSelectionPage> createState() => _SeatSelectionPageState();
+}
+
+class _SeatSelectionPageState extends State<SeatSelectionPage> {
+  final List<String> selectedSeats = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Select Seats'),
+        actions: [
+          if (selectedSeats.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                context.read<BookingBloc>().add(BookingSeatsSelected(selectedSeats:selectedSeats));
+                Navigator.pushNamed(
+                  context,
+                  '/booking/stops',
+                  arguments: {
+                    'route': widget.route,
+                    'transport': widget.transport,
+                    'selectedSeats': selectedSeats,
+                  },
+                );
+              },
+              child: Text(
+                'Next (${selectedSeats.length})',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // const Text('Sales Trend (30 Days)'), style: TextStyle(fontWeight: FontWeight.bold)),
-          Text('Sales Trend', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold,),),
-          SizedBox(
-            height: 250,
-            child: SfCartesianChart(
-              title: ChartTitle(
-                text: 'Sales Trend (Last 30 Days)',
-                alignment: ChartAlignment.near,
-                textStyle: Theme.of(context).textTheme.titleMedium,
-              ),
-              legend: Legend(
-                isVisible: true,
-                position: LegendPosition.bottom,
-                overflowMode: LegendItemOverflowMode.wrap,
-              ),
-              tooltipBehavior: TooltipBehavior(enable: true),
-              primaryXAxis: CategoryAxis(
-                labelRotation: -45,
-                majorGridLines: const MajorGridLines(width: 0),
-                interval: 5,
-                title: AxisTitle(text: 'Date'),
-              ),
-              primaryYAxis: NumericAxis(
-                title: AxisTitle(text: 'Revenue (Tsh)'),
-                axisLine: const AxisLine(width: 1),
-              ),
-              axes: <ChartAxis>[
-                NumericAxis(
-                  name: 'quantityAxis',
-                  opposedPosition: true,
-                  title: AxisTitle(text: 'Units Sold'),
+      body: BlocBuilder<BookingBloc, BookingState>(
+        builder: (context, state) {
+          if (state is BookingLoading) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.transport.name} - ${widget.transport.type.toUpperCase()}',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ],
-              series: <ChartSeries>[
-                LineSeries<Map<String, dynamic>, String>(
-                  name: 'Revenue',
-                  dataSource: trendData,
-                  xValueMapper: (data, _) =>
-                      data['date'].toString().substring(5), // "MM-DD"
-                  yValueMapper: (data, _) => data['value'],
-                  color: Theme.of(context).primaryColor,
-                  markerSettings: const MarkerSettings(isVisible: true),
-                  enableTooltip: true,
+                SizedBox(height: 8),
+                Text(
+                  '${widget.route.origin} to ${widget.route.destination}',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                LineSeries<Map<String, dynamic>, String>(
-                  name: 'Units Sold',
-                  dataSource: trendData,
-                  xValueMapper: (data, _) =>
-                      data['date'].toString().substring(5), // "MM-DD"
-                  yValueMapper: (data, _) => data['quantity'],
-                  yAxisName: 'quantityAxis',
-                  color: Colors.orange,
-                  markerSettings: const MarkerSettings(isVisible: true),
-                  enableTooltip: true,
-                ),
+                SizedBox(height: 24),
+                _buildSeatLegend(),
+                SizedBox(height: 16),
+                _buildSeatMap(),
               ],
             ),
-          ),
-          Row(
-            children: [
-              Icon(Icons.show_chart, color: Colors.orange, size: 16),
-              SizedBox(width: 4),
-              Text('Units Sold', style: TextStyle(fontSize: 12)),
-              SizedBox(width: 16),
-              Icon(Icons.show_chart, color: Theme.of(context).primaryColor, size: 16),
-              SizedBox(width: 4),
-              Text('Revenue', style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-
-  Widget _buildStockChart(ProductLoaded state) {
-    final lowStockItems = state.products.where((p) => p.quantity <= p.lowStockThreshold).toList();
-    final normalStockItems = state.products.where((p) => p.quantity > p.lowStockThreshold).toList();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Stock Overview',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: SfCartesianChart(
-              margin: EdgeInsets.zero,
-              plotAreaBorderWidth: 0,
-              primaryXAxis: CategoryAxis(
-                labelPlacement: LabelPlacement.onTicks,
-                majorGridLines: const MajorGridLines(width: 0),
-              ),
-              primaryYAxis: NumericAxis(
-                minimum: 0,
-                majorGridLines: const MajorGridLines(width: 0.5),
-              ),
-              series: <ChartSeries>[
-                ColumnSeries<Map<String, dynamic>, String>(
-                  dataSource: [
-                    {'category': 'Low Stock', 'value': lowStockItems.length},
-                    {'category': 'Normal Stock', 'value': normalStockItems.length},
-                  ],
-                  xValueMapper: (data, _) => data['category'],
-                  yValueMapper: (data, _) => data['value'],
-                  pointColorMapper: (data, _) => data['category'] == 'Low Stock'
-                      ? const Color(0xFFFF7043)
-                      : const Color(0xFF4CAF50),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+  Widget _buildSeatLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildLegendItem('Available', Colors.green),
+        _buildLegendItem('Selected', Colors.blue),
+        _buildLegendItem('Booked', Colors.red),
+      ],
     );
   }
 
-  Widget _buildRecentActivities(ProductLoaded state) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Recent Activities',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () {}, // Navigate to full activities screen
-                child: const Text('View All'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...state.recentMovements.take(5).map((movement) => _buildActivityItem(context, movement)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(BuildContext context, StockMovement movement) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        leading: Container(
-          width: 40,
-          height: 40,
+  Widget _buildLegendItem(String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: movement.movementType == 'in'
-                ? const Color(0xFF4CAF50).withOpacity(0.2)
-                : const Color(0xFFF44336).withOpacity(0.2),
-          ),
-          child: Icon(
-            movement.movementType == 'in' ? Icons.arrow_downward : Icons.arrow_upward,
-            color: movement.movementType == 'in' ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
+            color: color,
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
-        title: Text(
-          movement.productName,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          '${movement.quantity} items • ${movement.date}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        trailing: Text(
-          movement.movementType == 'in' ? 'In' : 'Out',
-          style: TextStyle(
-            color: movement.movementType == 'in' ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+        SizedBox(width: 4),
+        Text(text),
+      ],
     );
   }
 
-  Widget _buildErrorFallback(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () => context.read<ProductCubit>().fetchDashboardStats(),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.5,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text('Error loading data', style: Theme.of(context).textTheme.bodyLarge),
-                ],
-              ),
-            ),
-          ),
-        ],
+  Widget _buildSeatMap() {
+    // In a real app, you'd use the actual seat layout from transport.seatLayout
+    // This is a simplified example with a 4x10 grid
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        childAspectRatio: 1,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
+      itemCount: 40,
+      itemBuilder: (context, index) {
+        final seatNumber = '${(index ~/ 4) + 1}${String.fromCharCode(65 + (index % 4))}';
+        final isAvailable = true; // In real app, check against available seats
+        final isSelected = selectedSeats.contains(seatNumber);
+
+        return SeatWidget(
+          seatNumber: seatNumber,
+          status: isSelected
+              ? SeatStatus.selected
+              : isAvailable
+              ? SeatStatus.available
+              : SeatStatus.booked,
+          onTap: isAvailable
+              ? () {
+            setState(() {
+              if (isSelected) {
+                selectedSeats.remove(seatNumber);
+              } else {
+                selectedSeats.add(seatNumber);
+              }
+            });
+          }
+              : null,
+        );
+      },
     );
   }
 }
 
---->lib/pages/tutorial_overlay.dart
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class TutorialService {
-  static const String _tutorialKey = 'tutorial_completed_v2';
+--->lib/pages/booking/payment_page.dart
+import 'package:flutter/material.dart'hide Route;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:transport_booking/models/booking.dart';
 
-  static Future<bool> shouldShowTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_tutorialKey) ?? false);
-  }
+import '../../blocs/booking/booking_bloc.dart';
+import '../../models/route.dart';
+import '../../models/transport.dart';
+import '../../utils/localization/app_localizations.dart';
 
-  static Future<void> completeTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_tutorialKey, true);
-  }
+class PaymentPage extends StatefulWidget {
+  final Route route;
+  final Transport transport;
+  final List<String> selectedSeats;
+  final String pickupStop;
+  final String dropoffStop;
 
-  static Future<void> resetTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tutorialKey);
-  }
-}
-
-class TutorialOverlay {
-  static Future<void> showTutorialIfNeeded(BuildContext context) async {
-    if (await TutorialService.shouldShowTutorial()) {
-      final navigatorKey = GlobalKey<NavigatorState>();
-
-      final steps = [
-        TutorialStep(
-          title: 'Welcome to Stock Manager',
-          description: 'Swipe through to learn how to use the app',
-          targetKey: GlobalKey(),
-        ),
-        TutorialStep(
-          title: 'Dashboard',
-          description: 'View your key metrics and quick actions here',
-          targetKey: GlobalKey(),
-          targetAlignment: Alignment.bottomCenter,
-        ),
-        TutorialStep(
-          title: 'Products Management',
-          description: 'Add, edit and manage your products inventory',
-          targetKey: GlobalKey(),
-          targetAlignment: Alignment.bottomCenter,
-        ),
-        TutorialStep(
-          title: 'Inventory Tracking',
-          description: 'Monitor stock levels and receive low stock alerts',
-          targetKey: GlobalKey(),
-          targetAlignment: Alignment.bottomCenter,
-        ),
-      ];
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => TutorialCarousel(
-          steps: steps,
-          onComplete: () {
-            TutorialService.completeTutorial();
-            Navigator.of(context).pop();
-          },
-        ),
-      );
-    }
-  }
-}
-
-class TutorialCarousel extends StatefulWidget {
-  final List<TutorialStep> steps;
-  final VoidCallback onComplete;
-
-  const TutorialCarousel({
-    required this.steps,
-    required this.onComplete,
-    Key? key,
-  }) : super(key: key);
+  const PaymentPage({
+    super.key,
+    required this.route,
+    required this.transport,
+    required this.selectedSeats,
+    required this.pickupStop,
+    required this.dropoffStop,
+  });
 
   @override
-  _TutorialCarouselState createState() => _TutorialCarouselState();
+  State<PaymentPage> createState() => _PaymentPageState();
 }
 
-class _TutorialCarouselState extends State<TutorialCarousel> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
+class _PaymentPageState extends State<PaymentPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _cardNumberController = TextEditingController();
+  final _expiryDateController = TextEditingController();
+  final _cvvController = TextEditingController();
+  final _nameController = TextEditingController();
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _cardNumberController.dispose();
+    _expiryDateController.dispose();
+    _cvvController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget.steps.length,
-                onPageChanged: (index) => setState(() => _currentPage = index),
-                itemBuilder: (context, index) {
-                  final step = widget.steps[index];
-                  return TutorialStepWidget(
-                    step: step,
-                    currentIndex: index,
-                    totalSteps: widget.steps.length,
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('payment')!),
+      ),
+      body: BlocListener<BookingBloc, BookingState>(
+        listener: (context, state) {
+          if (state is BookingSubmissionSuccess) {
+            Navigator.pushReplacementNamed(
+              context,
+              '/booking/confirmation',
+              arguments: {'booking': state.booking},
+            );
+          } else if (state is BookingSubmissionFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error)),
+            );
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${widget.transport.name} - ${widget.transport.type.toUpperCase()}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${widget.route.origin} to ${widget.route.destination}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '${widget.selectedSeats.length} ${AppLocalizations.of(context)!.translate('seats')!}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '${AppLocalizations.of(context)!.translate('pickup')!}: ${widget.pickupStop}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${AppLocalizations.of(context)!.translate('dropoff')!}: ${widget.dropoffStop}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 24),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _cardNumberController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!
+                            .translate('card_number')!,
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!
+                              .translate('card_number_required')!;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _expiryDateController,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .translate('expiry_date')!,
+                            ),
+                            keyboardType: TextInputType.datetime,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!
+                                    .translate('expiry_date_required')!;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _cvvController,
+                            decoration: InputDecoration(
+                              labelText:
+                              AppLocalizations.of(context)!.translate('cvv')!,
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return AppLocalizations.of(context)!
+                                    .translate('cvv_required')!;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!
+                            .translate('cardholder_name')!,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!
+                              .translate('cardholder_name_required')!;
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  if (state is BookingSubmissionInProgress) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        final seats = widget.selectedSeats.map((seat) => {
+                          'seat_number': seat,
+                          'passenger_name': _nameController.text,
+                          'passenger_age': null,
+                          'passenger_gender': null,
+                        }).toList();
+
+                        // final booking = Booking(
+                        //   routeId: widget.route.id,
+                        //   transportId: widget.transport.id,
+                        //   pickupStopId: widget.pickupStop,
+                        //   dropoffStopId: widget.dropoffStop,
+                        //   seats: seats,
+                        //   // You may need to fill in userId, date, price, etc., depending on your Booking model
+                        // );
+                        context.read<BookingBloc>().add(
+                          BookingSubmitted(
+                            routeId: widget.route.id,
+                            transportId: widget.transport.id,
+                            pickupStopId: widget.pickupStop,
+                            dropoffStopId: widget.dropoffStop,
+                            seats: seats,
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                        AppLocalizations.of(context)!.translate('pay_now')!),
                   );
                 },
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (_currentPage > 0)
-                    TextButton(
-                      onPressed: () => _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      ),
-                      child: const Text('Back'),
-                    )
-                  else
-                    const SizedBox(width: 80),
-                  _buildPageIndicator(),
-                  _currentPage < widget.steps.length - 1
-                      ? TextButton(
-                    onPressed: () => _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+--->lib/pages/booking/confirmation_page.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:transport_booking/blocs/booking/booking_bloc.dart';
+import 'package:transport_booking/models/booking.dart';
+import 'package:transport_booking/utils/localization/app_localizations.dart';
+
+class BookingConfirmationPage extends StatelessWidget {
+  const BookingConfirmationPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final booking = ModalRoute.of(context)!.settings.arguments as Booking;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.translate('confirmation')!),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('booking_confirmed')!,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    child: const Text('Next'),
-                  )
-                      : TextButton(
-                    onPressed: widget.onComplete,
-                    child: const Text('Get Started'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 80,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      booking.bookingReference,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('booking_details')!,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(
+                      context,
+                      Icons.directions_bus,
+                      '${booking.route.origin} → ${booking.route.destination}',
+                    ),
+                    _buildDetailRow(
+                      context,
+                      Icons.event,
+                      booking.date.toString(),
+                    ),
+                    _buildDetailRow(
+                      context,
+                      Icons.confirmation_number,
+                      '${booking.seats.length} ${AppLocalizations.of(context)!.translate('seats')}',
+                    ),
+                    _buildDetailRow(
+                      context,
+                      Icons.attach_money,
+                      '\$${booking.totalPrice.toStringAsFixed(2)}',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  context.read<BookingBloc>().add(DownloadTicket(bookingId: booking.bookingReference));
+                },
+                child: Text(
+                  AppLocalizations.of(context)!.translate('download_ticket')!,
+                ),
               ),
             ),
           ],
@@ -1315,124 +1192,52 @@ class _TutorialCarouselState extends State<TutorialCarousel> {
     );
   }
 
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(widget.steps.length, (index) {
-        return Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _currentPage == index
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey,
-          ),
-        );
-      }),
-    );
-  }
-}
-
-class TutorialStepWidget extends StatelessWidget {
-  final TutorialStep step;
-  final int currentIndex;
-  final int totalSteps;
-
-  const TutorialStepWidget({
-    required this.step,
-    required this.currentIndex,
-    required this.totalSteps,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildDetailRow(BuildContext context, IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
         children: [
-          Text(
-            step.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            step.description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withOpacity(0.9),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          // You can add illustrations or icons here
-          Icon(
-            _getStepIcon(currentIndex),
-            size: 100,
-            color: Colors.white,
-          ),
+          Icon(icon),
+          const SizedBox(width: 16),
+          Text(text),
         ],
       ),
     );
   }
-
-  IconData _getStepIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icons.waving_hand;
-      case 1:
-        return Icons.dashboard;
-      case 2:
-        return Icons.inventory;
-      case 3:
-        return Icons.analytics;
-      default:
-        return Icons.help;
-    }
-  }
 }
 
-class TutorialStep {
-  final String title;
-  final String description;
-  final GlobalKey targetKey;
-  final Alignment targetAlignment;
 
-  TutorialStep({
-    required this.title,
-    required this.description,
-    required this.targetKey,
-    this.targetAlignment = Alignment.center,
-  });
-}
-
---->lib/pages/login_screen.dart
+--->lib/pages/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:stock_manager/controllers/auth_controller.dart';
+import 'package:transport_booking/blocs/auth/auth_bloc.dart';
+import 'package:transport_booking/config/routes.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  bool _useEmail = true;
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _emailController.text = 'john.doe1@example.com';
+    _passwordController.text = 'password123';
+  }
+  @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -1440,994 +1245,287 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocListener<AuthCubit, AuthState>(
+      appBar: AppBar(title: const Text('Login')),
+      body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            Navigator.pushReplacementNamed(context, '/home');
-          } else if (state is AuthError) {
-            setState(() => _isLoading = false);
+          if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+              SnackBar(content: Text(state.message)),
             );
+          } else if (state is AuthAuthenticated) {
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
           }
         },
-        child: Stack(
-          children: [
-            // Background gradient
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                  ],
-                ),
-              ),
-            ),
-
-            // Floating circles decoration
-            Positioned(
-              top: -50,
-              right: -30,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -80,
-              left: -50,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                ),
-              ),
-            ),
-
-            // Content
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    // Logo with glass morphism effect
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: Colors.white.withOpacity(0.2),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.inventory_rounded,
-                          size: 50,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // Glass morphism card for form
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: Colors.white.withOpacity(0.1),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            Text(
-                              'Stock Manager',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Username field
-                            TextFormField(
-                              controller: _usernameController,
-                              style: const TextStyle(fontSize: 14),
-                              decoration: InputDecoration(
-                                labelText: 'Username',
-                                prefixIcon: Icon(
-                                  Icons.person_outline,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.8),
-                                floatingLabelBehavior: FloatingLabelBehavior.auto, // Let it float on focus
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.transparent),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your username';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Password field
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              style: const TextStyle(fontSize: 14),
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: Icon(
-                                  Icons.lock_outline,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withOpacity(0.8),
-                                floatingLabelBehavior: FloatingLabelBehavior.auto,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.transparent),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Login button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 3,
-                                  shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                                  strokeWidth: 2,
-                                )
-                                    : Text(
-                                  'LOGIN',
-                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const Text('Use Email'),
+                    Switch(
+                      value: _useEmail,
+                      onChanged: (value) {
+                        setState(() {
+                          _useEmail = value;
+                        });
+                      },
                     ),
                   ],
                 ),
-              ),
+                if (_useEmail)
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      return null;
+                    },
+                  )
+                else
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(labelText: 'Phone'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthLoading) {
+                      return const CircularProgressIndicator();
+                    }
+                    return ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          context.read<AuthBloc>().add(
+                            AuthLoginRequested(
+                              email: _useEmail ? _emailController.text : null,
+                              phone: !_useEmail ? _phoneController.text : null,
+                              password: _passwordController.text,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Login'),
+                    );
+                  },
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.register);
+                  },
+                  child: const Text('Don\'t have an account? Register'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      context.read<AuthCubit>().login(
-        _usernameController.text.trim(),
-        _passwordController.text.trim(),
-      );
-    }
-  }
 }
 
---->lib/pages/product_form.dart
+
+--->lib/pages/auth/register_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:stock_manager/utils/haptic_feedback_helper.dart';
-import 'dart:io';
-import '../controllers/product_controller.dart';
+import 'package:transport_booking/blocs/auth/auth_bloc.dart';
+import 'package:transport_booking/config/routes.dart';
 
-class ProductForm extends StatefulWidget {
-  const ProductForm({Key? key}) : super(key: key);
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<ProductForm> createState() => _ProductFormState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _ProductFormState extends State<ProductForm> {
+class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _descController = TextEditingController();
-  File? _imageFile;
-  final _picker = ImagePicker();
-  bool _isUploading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Product'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isUploading ? null : _submitForm,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _buildImagePicker(),
-                  const SizedBox(height: 24),
-                  _buildFormFields(),
-                  const SizedBox(height: 24),
-                  _buildSaveButton(),
-                ],
-              ),
-            ),
-          ),
-          if (_isUploading) _buildLoadingOverlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImagePicker() {
-    return GestureDetector(
-      onTap: _pickImage,
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: _imageFile != null
-            ? ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.file(_imageFile!, fit: BoxFit.cover),
-        )
-            : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_a_photo,
-              size: 50,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add Product Image',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFormFields() {
-    return Column(
-      children: [
-        TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: 'Product Name',
-            prefixIcon: Icon(
-              Icons.shopping_bag_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-          ),
-          validator: (value) => value!.isEmpty ? 'Required' : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _priceController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Price',
-            prefixIcon: Icon(
-              Icons.attach_money_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-          ),
-          validator: (value) => value!.isEmpty ? 'Required' : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _quantityController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Initial Quantity',
-            prefixIcon: Icon(
-              Icons.format_list_numbered_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-          ),
-          validator: (value) => value!.isEmpty ? 'Required' : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _descController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: 'Description',
-            alignLabelWithHint: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        // onPressed: _isUploading ? null : _submitForm,
-        onPressed: () async {
-          await HapticFeedbackHelper.selectionClick();
-          _isUploading ? null : _submitForm();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 3,
-          shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-        ),
-        child: Text(
-          'Save Product',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.3),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isUploading = true);
-
-    try {
-      final productData = {
-        'name': _nameController.text,
-        'base_price': double.parse(_priceController.text),
-        'quantity': int.parse(_quantityController.text),
-        'description': _descController.text,
-        'product_type_id': 1,
-        'category_id': 1,
-        'attributes': [
-          {'attribute_id': 1, 'value': 'Blue'},
-          {'attribute_id': 2, 'value': '64'},
-          {'attribute_id': 7, 'value': 10},
-          {'attribute_id': 9, 'value': 7},
-        ]
-      };
-
-      final productCubit = context.read<ProductCubit>();
-      final product = await productCubit.addProduct(productData);
-
-      if (_imageFile != null && product.id != null) {
-        await productCubit.uploadProductImage(product.id!, _imageFile!);
-      }
-
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
-  }
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _useEmail = true;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _priceController.dispose();
-    _quantityController.dispose();
-    _descController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
-}
-
-*Now Lets implement these changes
---->editProfile page
---->tutorialoverlay for the first
---->Homepage should be filled with more attractive cards/gadgets/widgets/attractive stuffs
---->Book now button should be floating at the bottom just like the other app codes i've provided below
---->Improve my onboarding page
---->Make the bottom navigation visible to most of the pages[home,search,tickets,settings & profile]
---->Improve all components like input fields,buttons,calender picker,icons e.t.c
-GIVEN
---->user.dart
-import 'package:equatable/equatable.dart';
-
-class User extends Equatable {
-  final String id;
-  final String uuid;
-  final String? email;
-  final String? phone;
-  final String firstName;
-  final String lastName;
-  final bool isVerified;
-  final String languagePref;
-  final String themePref;
-  final String? profilePicture;
-
-  const User({
-    required this.id,
-    required this.uuid,
-    this.email,
-    this.phone,
-    required this.firstName,
-    required this.lastName,
-    required this.isVerified,
-    required this.languagePref,
-    required this.themePref,
-    this.profilePicture,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'].toString(),
-      uuid: json['uuid'],
-      email: json['email'],
-      phone: json['phone'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      isVerified: json['is_verified'] ?? false,
-      languagePref: json['language_pref'] ?? 'en',
-      themePref: json['theme_pref'] ?? 'system',
-      profilePicture: json['profile_picture'],
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-    id,
-    uuid,
-    email,
-    phone,
-    firstName,
-    lastName,
-    isVerified,
-    languagePref,
-    themePref,
-    profilePicture,
-  ];
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'uuid': uuid,
-      'email': email,
-      'phone': phone,
-      'first_name': firstName,
-      'last_name': lastName,
-      'is_verified': isVerified,
-      'language_pref': languagePref,
-      'theme_pref': themePref,
-      'profile_picture': profilePicture,
-    };
-  }
-}
-
---->user_repository.dart
-// lib/repositories/user_repository.dart
-
-import '../models/user.dart';
-import '../services/api_service.dart';
-
-class UserRepository {
-  final ApiService apiService;
-
-  UserRepository({required this.apiService});
-
-  Future<User> fetchProfile() async {
-    final response = await apiService.get('/users/profile');
-    return User.fromJson(response);
-  }
-
-  Future<void> updateProfile({
-    required String firstName,
-    required String lastName,
-    required String phone,
-  }) async {
-    await apiService.put('/users/profile', {
-      'firstName': firstName,
-      'lastName': lastName,
-      'phone': phone,
-    });
-  }
-
-  Future<void> updatePreferences({
-    required String languagePref,
-    required String themePref,
-  }) async {
-    await apiService.put('/users/preferences', {
-      'languagePref': languagePref,
-      'themePref': themePref,
-    });
-  }
-}
-
---->lib/widgets/custom_bottom_nav.dart
-
-// lib/widgets/custom_bottom_nav.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:transport_booking/blocs/theme/theme_bloc.dart';
-import 'package:transport_booking/config/routes.dart';
-import 'package:transport_booking/utils/localization/app_localizations.dart';
-
-class CustomBottomNav extends StatefulWidget {
-  const CustomBottomNav({super.key});
-
-  @override
-  State<CustomBottomNav> createState() => _CustomBottomNavState();
-}
-
-class _CustomBottomNavState extends State<CustomBottomNav> {
-  int _currentIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ThemeBloc, ThemeState>(
-      builder: (context, state) {
-        final themeMode = state.themeMode;
-        final isDark = themeMode == ThemeMode.dark ||
-            (themeMode == ThemeMode.system &&
-                MediaQuery.of(context).platformBrightness == Brightness.dark);
-
-        return Container(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: BottomAppBar(
-              height: 80,
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 8,
-              padding: EdgeInsets.zero,
-              color: isDark ? const Color(0xFF16213E) : Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(context, 0, Icons.home_filled, 'home'),
-                  _buildNavItem(context, 1, Icons.search, 'search'),
-                  const SizedBox(width: 40), // Space for FAB
-                  _buildNavItem(context, 2, Icons.confirmation_num, 'tickets'),
-                  _buildNavItem(context, 3, Icons.person, 'profile'),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNavItem(BuildContext context, int index, IconData icon, String labelKey) {
-    final isSelected = _currentIndex == index;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() => _currentIndex = index);
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, AppRoutes.home);
-              break;
-            case 1:
-              Navigator.pushNamed(context, AppRoutes.search);
-              break;
-            case 2:
-              Navigator.pushNamed(context, AppRoutes.tickets);
-              break;
-            case 3:
-              Navigator.pushNamed(context, AppRoutes.profile);
-              break;
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? colorScheme.primary.withOpacity(0.1)
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context)!.translate(labelKey)!,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
---->lib/pages/home/home_page.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/booking/booking_bloc.dart';
-import '../../blocs/language/language_bloc.dart';
-import '../../blocs/theme/theme_bloc.dart';
-import '../../config/routes.dart';
-import '../../widgets/custom_bottom_nav.dart';
-import '../../utils/localization/app_localizations.dart';
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.translate('home')!),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.setting);
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('welcome')!,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.search);
-              },
-              child: Text(
-                  AppLocalizations.of(context)!.translate('book_now')!),
-            ),
-            const SizedBox(height: 16),
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return Text(
-                    '${AppLocalizations.of(context)!.translate('logged_in_as')!} ${state.user.email ?? state.user.phone}',
-                  );
-                }
-                return ElevatedButton(
+      appBar: AppBar(title: const Text('Register')),
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          } else if (state is AuthAuthenticated) {
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Text('Use Email'),
+                    Switch(
+                      value: _useEmail,
+                      onChanged: (value) {
+                        setState(() {
+                          _useEmail = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                if (_useEmail)
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      }
+                      return null;
+                    },
+                  )
+                else
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(labelText: 'Phone'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                TextFormField(
+                  controller: _firstNameController,
+                  decoration: const InputDecoration(labelText: 'First Name'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your first name';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _lastNameController,
+                  decoration: const InputDecoration(labelText: 'Last Name'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your last name';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthLoading) {
+                      return const CircularProgressIndicator();
+                    }
+                    return ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          context.read<AuthBloc>().add(
+                            AuthRegisterRequested(
+                              email: _useEmail ? _emailController.text : null,
+                              phone: !_useEmail ? _phoneController.text : null,
+                              password: _passwordController.text,
+                              firstName: _firstNameController.text,
+                              lastName: _lastNameController.text,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Register'),
+                    );
+                  },
+                ),
+                TextButton(
                   onPressed: () {
                     Navigator.pushNamed(context, AppRoutes.login);
                   },
-                  child: Text(
-                      AppLocalizations.of(context)!.translate('login')!),
-                );
-              },
+                  child: const Text('Already have an account? Login'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomNav(),
     );
   }
 }
 
---->lib/blocs/auth/auth_bloc.dart
-// lib/blocs/auth/auth_bloc.dart
-import 'dart:async';
-import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
+OK
+Who and who, so we can check from the server
+And what was their supposed loan
+-------------------------------------------------
+Tafsiri:
+Driver
 
-import '../../models/user.dart';
-import '../../repositories/auth_repository.dart';
+-------------------------------------------------
+--->Yes i Would you like you to continue with enhancing the remaining pages
+(login, register, booking flows, select_seats, select_stops, payment)
 
-part 'auth_event.dart';
-part 'auth_state.dart';
+--->Also i want the bottom nav to stay for most pages as the main navigator to engulf other pages
 
-class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final AuthRepository authRepository;
-
-  AuthBloc({required this.authRepository}) : super(AuthInitial()) {
-    on<AuthLoginRequested>(_onLoginRequested);
-    on<AuthRegisterRequested>(_onRegisterRequested);
-    on<AuthLogoutRequested>(_onLogoutRequested);
-    on<AuthCheckStatus>(_onCheckStatus);
-    on<AuthAutoLogin>(_onAutoLogin);
-  }
-
-  FutureOr<void> _onLoginRequested(
-      AuthLoginRequested event,
-      Emitter<AuthState> emit,
-      ) async {
-    emit(AuthLoading());
-    try {
-      final result = await authRepository.login(
-        email: event.email,
-        phone: event.phone,
-        password: event.password,
-      );
-
-      result.fold(
-            (failure) => emit(AuthError(message: failure.message)),
-            (user) => emit(AuthAuthenticated(user: user)),
-      );
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onRegisterRequested(
-      AuthRegisterRequested event,
-      Emitter<AuthState> emit,
-      ) async {
-    emit(AuthLoading());
-    try {
-      final result = await authRepository.register(
-        email: event.email,
-        phone: event.phone,
-        password: event.password,
-        firstName: event.firstName,
-        lastName: event.lastName,
-      );
-
-      result.fold(
-            (failure) => emit(AuthError(message: failure.message)),
-            (user) => emit(AuthAuthenticated(user: user)),
-      );
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onLogoutRequested(
-      AuthLogoutRequested event,
-      Emitter<AuthState> emit,
-      ) async {
-    emit(AuthLoading());
-    try {
-      final result = await authRepository.logout();
-      result.fold(
-            (failure) => emit(AuthError(message: failure.message)),
-            (_) => emit(AuthUnauthenticated()),
-      );
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onCheckStatus(
-      AuthCheckStatus event,
-      Emitter<AuthState> emit,
-      ) async {
-    emit(AuthLoading());
-    try {
-      final result = await authRepository.getCurrentUser();
-      result.fold(
-            (failure) => emit(AuthError(message: failure.message)),
-            (user) => user != null
-            ? emit(AuthAuthenticated(user: user))
-            : emit(AuthUnauthenticated()),
-      );
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  FutureOr<void> _onAutoLogin(
-      AuthAutoLogin event,
-      Emitter<AuthState> emit,
-      ) async {
-    await _onCheckStatus(AuthCheckStatus(), emit);
-  }
-}
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-I was improving my interface(not logic) from transport_booking project to be modern like in my stock_manager
-
-How do i mingle/merge these two codes?
-
-*Initial codes
---->lib/widgets/custom_bottom_nav.dart
+--->Make the top card/widget/gadget of the home page to stick on top while scrolling up and expand while scrolled down like (SliverPersistentHeader/ SliverAppBar). Also should have some more details so it can look like a classic glassy business card
 
 
 
+--->Yes continue with the implementation of [register page, payment page and confirmation pages] as well
+--->You never implemented TransportTypeCard on homePage which leads to error, so implement it
+--->On SelectSeat page, Provide a driver icon/visual by default on the right side if not specified, Add more slight space between each pair seats by default(to appear like 2x2 arrangement) if no parameter provided
+--->You can also provide any additional components i might need for a complete implementation
+--->Improve the app bars to have a nice gradient
 
-*Modified codes
---->lib/widgets/custom_bottom_nav.dart
-
-
-*********************
-Lets do the same for
-
-*Initial codes
---->lib/pages/home/home_page.dart
-.
-.
-.
-*Modified codes
---->lib/pages/home/home_page.dart
-.
-.
-.

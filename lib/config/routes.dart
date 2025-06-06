@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:transport_booking/pages/auth/login_page.dart';
 import 'package:transport_booking/pages/auth/register_page.dart';
+import 'package:transport_booking/pages/booking/confirmation_page.dart';
 import 'package:transport_booking/pages/booking/payment_page.dart';
 import 'package:transport_booking/pages/booking/seat_selection_page.dart';
 import 'package:transport_booking/pages/booking/stops_selection_page.dart';
@@ -82,6 +83,17 @@ class AppRoutes {
             selectedSeats: args['selectedSeats'],
             pickupStop: args['pickupStop'],
             dropoffStop: args['dropoffStop'],
+          ),
+        );
+      case bookingConfirmation:
+        // final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => BookingConfirmationPage(
+            // route: args['route'],
+            // transport: args['transport'],
+            // selectedSeats: args['selectedSeats'],
+            // pickupStop: args['pickupStop'],
+            // dropoffStop: args['dropoffStop'],
           ),
         );
       case setting:

@@ -4,204 +4,301 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
 import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
-import 'package:transport_booking/models/booking.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
-import 'package:transport_booking/widgets/custom_bottom_nav.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_scaffold.dart';
+import 'package:transport_booking/widgets/transport_type_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.05),
+    return MainScaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 320,
+            floating: true,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(AppLocalizations.of(context)!.translate('home')!),
+              background: _buildProfileHeader(context),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildTransportTypes(context),
+                  const SizedBox(height: 24),
+                  _buildPopularRoutes(context),
+                  const SizedBox(height: 24),
+                  _buildRecentBookings(context),
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
           ),
-
-          // Floating circles decoration
-          Positioned(
-            top: -50,
-            right: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -80,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-              ),
-            ),
-          ),
-
-          // Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                _buildWelcomeCard(context),
-                const SizedBox(height: 24),
-                _buildTransportTypes(context),
-                const SizedBox(height: 24),
-                _buildPopularRoutes(context),
-                const SizedBox(height: 24),
-                _buildRecentBookings(context),
-                const SizedBox(height: 80), // Space for FAB
-              ],
-            ),
-          ),
         ],
       ),
-      floatingActionButton: _buildBookNowFAB(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: const CustomBottomNav(),
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context) {
-    return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return Text(
-                    '${AppLocalizations.of(context)!.translate('welcome_back')!}, ${state.user.firstName}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }
-                return Text(
-                  AppLocalizations.of(context)!.translate('welcome')!,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            Text(
-              AppLocalizations.of(context)!.translate('home_subtitle')!,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+  Widget _buildProfileHeader(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+            Theme.of(context).colorScheme.primary.withOpacity(0.3),
           ],
         ),
+      ),
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final user = state is AuthAuthenticated ? state.user : null;
+          return Padding(
+            padding: const EdgeInsets.only(top: 100, left: 16, right: 16, bottom: 16),
+            child: GlassCard(
+              borderRadius: 16,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                            image: DecorationImage(
+                              image: user?.profilePicture != null
+                                  ? NetworkImage(user!.profilePicture!)
+                                  : const AssetImage('assets/images/default_profile.png') as ImageProvider,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user != null
+                                    ? '${user.firstName} ${user.lastName}'
+                                    : AppLocalizations.of(context)!.translate('welcome')!,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (user != null)
+                                Text(
+                                  user.email ?? user.phone ?? '',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _buildStatItem(
+                          context,
+                          Icons.confirmation_number,
+                          '5',
+                          AppLocalizations.of(context)!.translate('trips')!,
+                        ),
+                        _buildStatItem(
+                          context,
+                          Icons.star,
+                          '4.8',
+                          AppLocalizations.of(context)!.translate('rating')!,
+                        ),
+                        _buildStatItem(
+                          context,
+                          Icons.workspace_premium,
+                          'Gold',
+                          AppLocalizations.of(context)!.translate('tier')!,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, IconData icon, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTransportTypes(BuildContext context) {
-    return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('book_ride')!,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: 1.5,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: [
+            TransportTypeCard(
+              icon: Icons.directions_bus,
+              title: AppLocalizations.of(context)!.translate('bus')!,
+              color: Colors.blue,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.search,
+                arguments: {'transportType': 'bus'},
+              ),
+            ),
+            TransportTypeCard(
+              icon: Icons.train,
+              title: AppLocalizations.of(context)!.translate('train')!,
+              color: Colors.green,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.search,
+                arguments: {'transportType': 'train'},
+              ),
+            ),
+            TransportTypeCard(
+              icon: Icons.airplanemode_active,
+              title: AppLocalizations.of(context)!.translate('plane')!,
+              color: Colors.purple,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.search,
+                arguments: {'transportType': 'plane'},
+              ),
+            ),
+            TransportTypeCard(
+              icon: Icons.directions_boat,
+              title: AppLocalizations.of(context)!.translate('ship')!,
+              color: Colors.orange,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.search,
+                arguments: {'transportType': 'ship'},
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPopularRoutes(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('transport_types')!,
+              AppLocalizations.of(context)!.translate('popular_routes')!,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              childAspectRatio: 1.5,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _buildTransportTypeCard(
-                  context,
-                  Icons.directions_bus,
-                  AppLocalizations.of(context)!.translate('bus')!,
-                  Colors.blue,
-                ),
-                _buildTransportTypeCard(
-                  context,
-                  Icons.train,
-                  AppLocalizations.of(context)!.translate('train')!,
-                  Colors.green,
-                ),
-                _buildTransportTypeCard(
-                  context,
-                  Icons.airplanemode_active,
-                  AppLocalizations.of(context)!.translate('plane')!,
-                  Colors.purple,
-                ),
-                _buildTransportTypeCard(
-                  context,
-                  Icons.directions_boat,
-                  AppLocalizations.of(context)!.translate('ship')!,
-                  Colors.orange,
-                ),
-              ],
+            TextButton(
+              onPressed: () {},
+              child: Text(AppLocalizations.of(context)!.translate('see_all')!),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildRouteCard(context, 'Nairobi', 'Mombasa', Icons.directions_bus),
+              _buildRouteCard(context, 'Dar es Salaam', 'Zanzibar', Icons.directions_boat),
+              _buildRouteCard(context, 'Nairobi', 'Kisumu', Icons.train),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTransportTypeCard(BuildContext context, IconData icon, String title, Color color) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.search,
-          arguments: {'transportType': title.toLowerCase()},
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.2), color.withOpacity(0.4)],
-          ),
-        ),
-        child: Center(
+  Widget _buildRouteCard(BuildContext context, String from, String to, IconData icon) {
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 16),
+      child: GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 40, color: color),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                ),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '$from → $to',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                'From \$25',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
           ),
@@ -210,94 +307,57 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildPopularRoutes(BuildContext context) {
-    return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('popular_routes')!,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: Text(AppLocalizations.of(context)!.translate('see_all')!),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildRouteItem(context, 'Nairobi', 'Mombasa', 'From \$25', Icons.directions_bus),
-            _buildRouteItem(context, 'Dar es Salaam', 'Zanzibar', 'From \$50', Icons.directions_boat),
-            _buildRouteItem(context, 'Nairobi', 'Kisumu', 'From \$30', Icons.train),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRouteItem(BuildContext context, String from, String to, String price, IconData icon) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        ),
-        child: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      ),
-      title: Text('$from → $to'),
-      subtitle: Text(price),
-      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.search,
-          arguments: {'from': from, 'to': to},
-        );
-      },
-    );
-  }
-
   Widget _buildRecentBookings(BuildContext context) {
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
         if (state is BookingsLoaded && state.bookings.isNotEmpty) {
-          return GlassCard(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('recent_bookings')!,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRoutes.tickets);
-                        },
-                        child: Text(AppLocalizations.of(context)!.translate('see_all')!),
-                      ),
-                    ],
+                  Text(
+                    AppLocalizations.of(context)!.translate('recent_trips')!,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  ...state.bookings.take(3).map((booking) => _buildBookingItem(context, booking)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.tickets);
+                    },
+                    child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              ...state.bookings.take(2).map((booking) =>
+                  GlassCard(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        ),
+                        child: Icon(
+                          _getTransportIcon(booking.route.transportType??'bus'),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      title: Text('${booking.route.origin} → ${booking.route.destination}'),
+                      subtitle: Text('${booking.date} • ${booking.status}'),
+                      trailing: Text('\$${booking.totalPrice.toStringAsFixed(2)}'),
+                      onTap: () {
+                        // Navigate to booking details
+                      },
+                    ),
+                  ),
+              ),
+            ],
           );
         }
         return const SizedBox.shrink();
@@ -305,79 +365,401 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBookingItem(BuildContext context, Booking booking) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        ),
-        child: Icon(
-          _getTransportIcon(booking.route.transportType??'bus'),
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-      title: Text('${booking.route.origin} → ${booking.route.destination}'),
-      subtitle: Text('${booking.date} • ${booking.status}'),
-      trailing: Text('\$${booking.totalPrice.toStringAsFixed(2)}'),
-      onTap: () {
-        // Navigate to booking details
-      },
-    );
-  }
-
   IconData _getTransportIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'bus':
-        return Icons.directions_bus;
-      case 'train':
-        return Icons.train;
-      case 'plane':
-        return Icons.airplanemode_active;
-      case 'ship':
-        return Icons.directions_boat;
-      default:
-        return Icons.directions_transit;
+      case 'bus': return Icons.directions_bus;
+      case 'train': return Icons.train;
+      case 'plane': return Icons.airplanemode_active;
+      case 'ship': return Icons.directions_boat;
+      default: return Icons.directions_transit;
     }
   }
-
-  Widget _buildBookNowFAB(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () => Navigator.pushNamed(context, AppRoutes.search),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF6A3CBC), Color(0xFF461B93)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6A3CBC).withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.search,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
 }
+
+
+
+
+// // lib/pages/home/home_page.dart
+// import 'package:flutter/material.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:transport_booking/blocs/auth/auth_bloc.dart';
+// import 'package:transport_booking/blocs/booking/booking_bloc.dart';
+// import 'package:transport_booking/config/routes.dart';
+// import 'package:transport_booking/models/booking.dart';
+// import 'package:transport_booking/utils/localization/app_localizations.dart';
+// import 'package:transport_booking/widgets/custom_bottom_nav.dart';
+// import 'package:transport_booking/widgets/glass_card.dart';
+//
+// class HomePage extends StatelessWidget {
+//   const HomePage({super.key});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       extendBody: true,
+//       body: Stack(
+//         children: [
+//           // Background gradient
+//           Container(
+//             decoration: BoxDecoration(
+//               gradient: LinearGradient(
+//                 begin: Alignment.topCenter,
+//                 end: Alignment.bottomCenter,
+//                 colors: [
+//                   Theme.of(context).colorScheme.primary.withOpacity(0.1),
+//                   Theme.of(context).colorScheme.primary.withOpacity(0.05),
+//                 ],
+//               ),
+//             ),
+//           ),
+//
+//           // Floating circles decoration
+//           Positioned(
+//             top: -50,
+//             right: -30,
+//             child: Container(
+//               width: 150,
+//               height: 150,
+//               decoration: BoxDecoration(
+//                 shape: BoxShape.circle,
+//                 color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+//               ),
+//             ),
+//           ),
+//           Positioned(
+//             bottom: -80,
+//             left: -50,
+//             child: Container(
+//               width: 200,
+//               height: 200,
+//               decoration: BoxDecoration(
+//                 shape: BoxShape.circle,
+//                 color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+//               ),
+//             ),
+//           ),
+//
+//           // Content
+//           SingleChildScrollView(
+//             padding: const EdgeInsets.all(16),
+//             child: Column(
+//               children: [
+//                 const SizedBox(height: 16),
+//                 _buildWelcomeCard(context),
+//                 const SizedBox(height: 24),
+//                 _buildTransportTypes(context),
+//                 const SizedBox(height: 24),
+//                 _buildPopularRoutes(context),
+//                 const SizedBox(height: 24),
+//                 _buildRecentBookings(context),
+//                 const SizedBox(height: 80), // Space for FAB
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//       floatingActionButton: _buildBookNowFAB(context),
+//       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+//       bottomNavigationBar: const CustomBottomNav(),
+//     );
+//   }
+//
+//   Widget _buildWelcomeCard(BuildContext context) {
+//     return GlassCard(
+//       child: Padding(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             BlocBuilder<AuthBloc, AuthState>(
+//               builder: (context, state) {
+//                 if (state is AuthAuthenticated) {
+//                   return Text(
+//                     '${AppLocalizations.of(context)!.translate('welcome_back')!}, ${state.user.firstName}',
+//                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   );
+//                 }
+//                 return Text(
+//                   AppLocalizations.of(context)!.translate('welcome')!,
+//                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 );
+//               },
+//             ),
+//             const SizedBox(height: 8),
+//             Text(
+//               AppLocalizations.of(context)!.translate('home_subtitle')!,
+//               style: Theme.of(context).textTheme.bodyMedium,
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildTransportTypes(BuildContext context) {
+//     return GlassCard(
+//       child: Padding(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(
+//               AppLocalizations.of(context)!.translate('transport_types')!,
+//               style: Theme.of(context).textTheme.titleLarge?.copyWith(
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+//             const SizedBox(height: 16),
+//             GridView.count(
+//               shrinkWrap: true,
+//               physics: const NeverScrollableScrollPhysics(),
+//               crossAxisCount: 2,
+//               childAspectRatio: 1.5,
+//               crossAxisSpacing: 16,
+//               mainAxisSpacing: 16,
+//               children: [
+//                 _buildTransportTypeCard(
+//                   context,
+//                   Icons.directions_bus,
+//                   AppLocalizations.of(context)!.translate('bus')!,
+//                   Colors.blue,
+//                 ),
+//                 _buildTransportTypeCard(
+//                   context,
+//                   Icons.train,
+//                   AppLocalizations.of(context)!.translate('train')!,
+//                   Colors.green,
+//                 ),
+//                 _buildTransportTypeCard(
+//                   context,
+//                   Icons.airplanemode_active,
+//                   AppLocalizations.of(context)!.translate('plane')!,
+//                   Colors.purple,
+//                 ),
+//                 _buildTransportTypeCard(
+//                   context,
+//                   Icons.directions_boat,
+//                   AppLocalizations.of(context)!.translate('ship')!,
+//                   Colors.orange,
+//                 ),
+//               ],
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildTransportTypeCard(BuildContext context, IconData icon, String title, Color color) {
+//     return GestureDetector(
+//       onTap: () {
+//         Navigator.pushNamed(
+//           context,
+//           AppRoutes.search,
+//           arguments: {'transportType': title.toLowerCase()},
+//         );
+//       },
+//       child: Container(
+//         decoration: BoxDecoration(
+//           borderRadius: BorderRadius.circular(12),
+//           gradient: LinearGradient(
+//             begin: Alignment.topLeft,
+//             end: Alignment.bottomRight,
+//             colors: [color.withOpacity(0.2), color.withOpacity(0.4)],
+//           ),
+//         ),
+//         child: Center(
+//           child: Column(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               Icon(icon, size: 40, color: color),
+//               const SizedBox(height: 8),
+//               Text(
+//                 title,
+//                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+//                   color: Theme.of(context).colorScheme.onSurface,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildPopularRoutes(BuildContext context) {
+//     return GlassCard(
+//       child: Padding(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//               children: [
+//                 Text(
+//                   AppLocalizations.of(context)!.translate('popular_routes')!,
+//                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 ),
+//                 TextButton(
+//                   onPressed: () {},
+//                   child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+//                 ),
+//               ],
+//             ),
+//             const SizedBox(height: 16),
+//             _buildRouteItem(context, 'Nairobi', 'Mombasa', 'From \$25', Icons.directions_bus),
+//             _buildRouteItem(context, 'Dar es Salaam', 'Zanzibar', 'From \$50', Icons.directions_boat),
+//             _buildRouteItem(context, 'Nairobi', 'Kisumu', 'From \$30', Icons.train),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   Widget _buildRouteItem(BuildContext context, String from, String to, String price, IconData icon) {
+//     return ListTile(
+//       leading: Container(
+//         width: 40,
+//         height: 40,
+//         decoration: BoxDecoration(
+//           shape: BoxShape.circle,
+//           color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+//         ),
+//         child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+//       ),
+//       title: Text('$from → $to'),
+//       subtitle: Text(price),
+//       trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
+//       onTap: () {
+//         Navigator.pushNamed(
+//           context,
+//           AppRoutes.search,
+//           arguments: {'from': from, 'to': to},
+//         );
+//       },
+//     );
+//   }
+//
+//   Widget _buildRecentBookings(BuildContext context) {
+//     return BlocBuilder<BookingBloc, BookingState>(
+//       builder: (context, state) {
+//         if (state is BookingsLoaded && state.bookings.isNotEmpty) {
+//           return GlassCard(
+//             child: Padding(
+//               padding: const EdgeInsets.all(16),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                     children: [
+//                       Text(
+//                         AppLocalizations.of(context)!.translate('recent_bookings')!,
+//                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                       TextButton(
+//                         onPressed: () {
+//                           Navigator.pushNamed(context, AppRoutes.tickets);
+//                         },
+//                         child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+//                       ),
+//                     ],
+//                   ),
+//                   const SizedBox(height: 16),
+//                   ...state.bookings.take(3).map((booking) => _buildBookingItem(context, booking)),
+//                 ],
+//               ),
+//             ),
+//           );
+//         }
+//         return const SizedBox.shrink();
+//       },
+//     );
+//   }
+//
+//   Widget _buildBookingItem(BuildContext context, Booking booking) {
+//     return ListTile(
+//       leading: Container(
+//         width: 40,
+//         height: 40,
+//         decoration: BoxDecoration(
+//           shape: BoxShape.circle,
+//           color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+//         ),
+//         child: Icon(
+//           _getTransportIcon(booking.route.transportType??'bus'),
+//           color: Theme.of(context).colorScheme.primary,
+//         ),
+//       ),
+//       title: Text('${booking.route.origin} → ${booking.route.destination}'),
+//       subtitle: Text('${booking.date} • ${booking.status}'),
+//       trailing: Text('\$${booking.totalPrice.toStringAsFixed(2)}'),
+//       onTap: () {
+//         // Navigate to booking details
+//       },
+//     );
+//   }
+//
+//   IconData _getTransportIcon(String type) {
+//     switch (type.toLowerCase()) {
+//       case 'bus':
+//         return Icons.directions_bus;
+//       case 'train':
+//         return Icons.train;
+//       case 'plane':
+//         return Icons.airplanemode_active;
+//       case 'ship':
+//         return Icons.directions_boat;
+//       default:
+//         return Icons.directions_transit;
+//     }
+//   }
+//
+//   Widget _buildBookNowFAB(BuildContext context) {
+//     return FloatingActionButton(
+//       onPressed: () => Navigator.pushNamed(context, AppRoutes.search),
+//       backgroundColor: Theme.of(context).colorScheme.primary,
+//       elevation: 4,
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(16),
+//       ),
+//       child: Container(
+//         width: 56,
+//         height: 56,
+//         decoration: BoxDecoration(
+//           borderRadius: BorderRadius.circular(16),
+//           gradient: const LinearGradient(
+//             colors: [Color(0xFF6A3CBC), Color(0xFF461B93)],
+//             begin: Alignment.topLeft,
+//             end: Alignment.bottomRight,
+//           ),
+//           boxShadow: [
+//             BoxShadow(
+//               color: const Color(0xFF6A3CBC).withOpacity(0.3),
+//               blurRadius: 10,
+//               spreadRadius: 2,
+//               offset: const Offset(0, 4),
+//             ),
+//           ],
+//         ),
+//         child: Icon(
+//           Icons.search,
+//           color: Colors.white,
+//         ),
+//       ),
+//     );
+//   }
+// }
+// // *************************
 
 
 
