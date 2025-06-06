@@ -4,9 +4,13 @@ import 'package:transport_booking/pages/auth/register_page.dart';
 import 'package:transport_booking/pages/booking/payment_page.dart';
 import 'package:transport_booking/pages/booking/seat_selection_page.dart';
 import 'package:transport_booking/pages/booking/stops_selection_page.dart';
+import 'package:transport_booking/pages/help/help_page.dart';
 import 'package:transport_booking/pages/home/home_page.dart';
 import 'package:transport_booking/pages/home/search_page.dart';
 import 'package:transport_booking/pages/onboarding/onboarding_page.dart';
+import 'package:transport_booking/pages/privacy/privacy_page.dart';
+import 'package:transport_booking/pages/profile/edit_profile_page.dart';
+import 'package:transport_booking/pages/profile/profile_page.dart';
 import 'package:transport_booking/pages/settings/settings_page.dart';
 import 'package:transport_booking/pages/tickets/tickets_page.dart';
 
@@ -42,8 +46,14 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const HomePage());
       case tickets:
         return MaterialPageRoute(builder: (_) => const TicketsPage());
-      // case profile:
-      //   return MaterialPageRoute(builder: (_) => const ProfilePage());
+      case profile:
+        return MaterialPageRoute(builder: (_) => const ProfilePage());
+      case editProfile:
+        return MaterialPageRoute(builder: (_) => const EditProfilePage());
+      case help:
+        return MaterialPageRoute(builder: (_) => const HelpPage());
+      case privacy:
+        return MaterialPageRoute(builder: (_) => const PrivacyPage());
       case search:
         return MaterialPageRoute(builder: (_) => const SearchPage());
       case seatSelection:

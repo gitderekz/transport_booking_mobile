@@ -61,7 +61,8 @@ class BookingRepository {
 
   Future<Either<Failure, List<Booking>>> getUserBookings() async {
     try {
-      final response = await apiService.get('/bookings/user');
+      // final response = await apiService.get('/bookings/user');
+      final response = await apiService.get('/bookings');
       final bookings = (response['data'] as List)
           .map((json) => Booking.fromJson(json))
           .toList();

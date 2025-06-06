@@ -1,3 +1,73 @@
+// // lib/config/theme.dart
+// import 'package:flutter/material.dart';
+//
+// class AppTheme {
+//   static final lightTheme = ThemeData(
+//     colorScheme: const ColorScheme.light(
+//       primary: Color(0xFF6A3CBC),
+//       secondary: Color(0xFF461B93),
+//       surface: Colors.white,
+//       background: Color(0xFFF5F6FA),
+//       error: Color(0xFFD63031),
+//     ),
+//     scaffoldBackgroundColor: const Color(0xFFF5F6FA),
+//     cardTheme: CardTheme(
+//       elevation: 0,
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(16),
+//       ),
+//       color: Colors.white,
+//     ),
+//     appBarTheme: const AppBarTheme(
+//       elevation: 0,
+//       centerTitle: true,
+//       backgroundColor: Colors.transparent,
+//       iconTheme: IconThemeData(color: Colors.black),
+//     ),
+//     bottomAppBarTheme: const BottomAppBarTheme(
+//       color: Colors.white,
+//       elevation: 10,
+//     ),
+//     floatingActionButtonTheme: const FloatingActionButtonThemeData(
+//       backgroundColor: Color(0xFF6A3CBC),
+//     ),
+//   );
+//
+//   static final darkTheme = ThemeData(
+//     colorScheme: const ColorScheme.dark(
+//       primary: Color(0xFF6A3CBC),
+//       secondary: Color(0xFF461B93),
+//       surface: Color(0xFF1E1E1E),
+//       background: Color(0xFF121212),
+//       error: Color(0xFFD63031),
+//     ),
+//     scaffoldBackgroundColor: const Color(0xFF121212),
+//     cardTheme: CardTheme(
+//       elevation: 0,
+//       shape: RoundedRectangleBorder(
+//         borderRadius: BorderRadius.circular(16),
+//       ),
+//       color: const Color(0xFF1E1E1E),
+//     ),
+//     appBarTheme: const AppBarTheme(
+//       elevation: 0,
+//       centerTitle: true,
+//       backgroundColor: Colors.transparent,
+//       iconTheme: IconThemeData(color: Colors.white),
+//     ),
+//     bottomAppBarTheme: const BottomAppBarTheme(
+//       color: Color(0xFF1E1E1E),
+//       elevation: 10,
+//     ),
+//     floatingActionButtonTheme: const FloatingActionButtonThemeData(
+//       backgroundColor: Color(0xFF6A3CBC),
+//     ),
+//   );
+// }
+// // *******************************
+
+
+
 import 'package:flutter/material.dart';
 
 class AppTheme {

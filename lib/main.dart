@@ -11,6 +11,7 @@ import 'package:transport_booking/config/routes.dart' as app_routes;
 import 'package:transport_booking/config/theme.dart';
 import 'package:transport_booking/repositories/auth_repository.dart';
 import 'package:transport_booking/repositories/transport_repository.dart';
+import 'package:transport_booking/repositories/user_repository.dart';
 import 'package:transport_booking/services/api_service.dart';
 import 'package:transport_booking/services/local_storage.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
@@ -28,6 +29,7 @@ void main() async {
   final authRepository = AuthRepository(apiService: apiService, localStorage: localStorage);
   final transportRepository = TransportRepository(apiService: apiService);
   final bookingRepository = BookingRepository(apiService: apiService);
+  final userRepository = UserRepository(apiService: apiService);
 
   runApp(
     MultiRepositoryProvider(
@@ -37,6 +39,7 @@ void main() async {
         RepositoryProvider.value(value: authRepository),
         RepositoryProvider.value(value: transportRepository),
         RepositoryProvider.value(value: bookingRepository),
+        RepositoryProvider.value(value: userRepository),
       ],
       child: MultiBlocProvider(
         providers: [

@@ -5,9 +5,20 @@ import '../../blocs/booking/booking_bloc.dart';
 import '../../models/booking.dart';
 import '../../utils/localization/app_localizations.dart';
 
-class TicketsPage extends StatelessWidget {
+class TicketsPage extends StatefulWidget {
   const TicketsPage({super.key});
 
+  @override
+  State<TicketsPage> createState() => _TicketsPageState();
+}
+
+class _TicketsPageState extends State<TicketsPage> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<BookingBloc>().add(LoadBookings());
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,6 +66,11 @@ class BookingCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
+            Text(
+              booking.seats.isNotEmpty
+                  ? 'Seats: ${booking.seats.map((s) => s['seat_number']).join(', ')}'
+                  : 'No seats assigned',
+            ),
             Text('Status: ${booking.status}'),
             Text('Payment: ${booking.paymentStatus}'),
             Text('Total: \$${booking.totalPrice.toStringAsFixed(2)}'),
