@@ -1514,18 +1514,14 @@ Tafsiri:
 Driver
 
 -------------------------------------------------
---->Yes i Would you like you to continue with enhancing the remaining pages
-(login, register, booking flows, select_seats, select_stops, payment)
-
---->Also i want the bottom nav to stay for most pages as the main navigator to engulf other pages
-
---->Make the top card/widget/gadget of the home page to stick on top while scrolling up and expand while scrolled down like (SliverPersistentHeader/ SliverAppBar). Also should have some more details so it can look like a classic glassy business card
 
 
+Thank you somuch, it did it;
+But i think the space btn col 2 & 3 takes/shares with the column 3 because it appears col 3 is a bit thin compare to others
 
---->Yes continue with the implementation of [register page, payment page and confirmation pages] as well
---->You never implemented TransportTypeCard on homePage which leads to error, so implement it
---->On SelectSeat page, Provide a driver icon/visual by default on the right side if not specified, Add more slight space between each pair seats by default(to appear like 2x2 arrangement) if no parameter provided
---->You can also provide any additional components i might need for a complete implementation
---->Improve the app bars to have a nice gradient
+Ok,
+I think there is something with inputs captured in there
+
+Can you share the Maintenance -> Input -> Copy and share
+
 

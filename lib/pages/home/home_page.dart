@@ -6,7 +6,6 @@ import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
-import 'package:transport_booking/widgets/main_scaffold.dart';
 import 'package:transport_booking/widgets/transport_type_card.dart';
 
 class HomePage extends StatelessWidget {
@@ -14,35 +13,33 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MainScaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 320,
-            floating: true,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(AppLocalizations.of(context)!.translate('home')!),
-              background: _buildProfileHeader(context),
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          expandedHeight: 320,
+          floating: true,
+          pinned: true,
+          flexibleSpace: FlexibleSpaceBar(
+            // title: Text(AppLocalizations.of(context)!.translate('home')!),
+            background: _buildProfileHeader(context),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildTransportTypes(context),
+                const SizedBox(height: 24),
+                _buildPopularRoutes(context),
+                const SizedBox(height: 24),
+                _buildRecentBookings(context),
+                const SizedBox(height: 80),
+              ],
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildTransportTypes(context),
-                  const SizedBox(height: 24),
-                  _buildPopularRoutes(context),
-                  const SizedBox(height: 24),
-                  _buildRecentBookings(context),
-                  const SizedBox(height: 80),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -53,8 +50,8 @@ class HomePage extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.7),
-            Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.7),
+            Theme.of(context).colorScheme.error.withOpacity(0.3),
           ],
         ),
       ),
@@ -62,7 +59,7 @@ class HomePage extends StatelessWidget {
         builder: (context, state) {
           final user = state is AuthAuthenticated ? state.user : null;
           return Padding(
-            padding: const EdgeInsets.only(top: 100, left: 16, right: 16, bottom: 16),
+            padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 16),
             child: GlassCard(
               borderRadius: 16,
               child: Padding(
@@ -176,13 +173,13 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context)!.translate('book_ride')!,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
+        // Text(
+        //   AppLocalizations.of(context)!.translate('book_ride')!,
+        //   style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        //     fontWeight: FontWeight.bold,
+        //   ),
+        // ),
+        // const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -238,43 +235,59 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildPopularRoutes(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('popular_routes')!,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: Text(AppLocalizations.of(context)!.translate('see_all')!),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildRouteCard(context, 'Nairobi', 'Mombasa', Icons.directions_bus),
-              _buildRouteCard(context, 'Dar es Salaam', 'Zanzibar', Icons.directions_boat),
-              _buildRouteCard(context, 'Nairobi', 'Kisumu', Icons.train),
+              Text(
+                AppLocalizations.of(context)!.translate('popular_routes')!,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+              ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildRouteCard(context, 'Nairobi', 'Kilimanjaro', Icons.directions_bus),
+                _buildRouteCard(context, 'Dar es Salaam', 'Zanzibar', Icons.directions_boat),
+                _buildRouteCard(context, 'Dodoma', 'Dar es Salaam', Icons.train),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildRouteCard(BuildContext context, String from, String to, IconData icon) {
     return Container(
       width: 180,
-      margin: const EdgeInsets.only(right: 16),
+      // margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(8.0),
       child: GlassCard(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -286,9 +299,9 @@ class HomePage extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: /*Theme.of(context).colorScheme.primary.withOpacity(0.1)*/const Color(0xFFF44336).withOpacity(0.2),
                 ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+                child: Icon(icon, color: /*Theme.of(context).colorScheme.primary*/ const Color(0xFFFF7043)),
               ),
               const SizedBox(height: 16),
               Text(
@@ -297,8 +310,8 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'From \$25',
-                style: Theme.of(context).textTheme.bodyMedium,
+                'Tsh 25000/=',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFFF44336)),
               ),
             ],
           ),
@@ -345,12 +358,26 @@ class HomePage extends StatelessWidget {
                         ),
                         child: Icon(
                           _getTransportIcon(booking.route.transportType??'bus'),
-                          color: Theme.of(context).colorScheme.primary,
+                          color: /*Theme.of(context).colorScheme.primary*/_getStatusColor(booking.status),
                         ),
                       ),
                       title: Text('${booking.route.origin} → ${booking.route.destination}'),
-                      subtitle: Text('${booking.date} • ${booking.status}'),
-                      trailing: Text('\$${booking.totalPrice.toStringAsFixed(2)}'),
+                      subtitle: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(booking.status),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text('${booking.date} • ${booking.status}')
+                          ),
+                        ],
+                      ),
+                      trailing: Text(
+                        'Tsh ${booking.totalPrice.toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: _getStatusColor(booking.status),),
+                      ),
                       onTap: () {
                         // Navigate to booking details
                       },
@@ -374,6 +401,19 @@ class HomePage extends StatelessWidget {
       default: return Icons.directions_transit;
     }
   }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 }
 
 
@@ -387,7 +427,7 @@ class HomePage extends StatelessWidget {
 // import 'package:transport_booking/config/routes.dart';
 // import 'package:transport_booking/models/booking.dart';
 // import 'package:transport_booking/utils/localization/app_localizations.dart';
-// import 'package:transport_booking/widgets/custom_bottom_nav.dart';
+// import 'package:transport_booking/widgets/main_navigation.dart';
 // import 'package:transport_booking/widgets/glass_card.dart';
 //
 // class HomePage extends StatelessWidget {
@@ -614,9 +654,9 @@ class HomePage extends StatelessWidget {
 //               ],
 //             ),
 //             const SizedBox(height: 16),
-//             _buildRouteItem(context, 'Nairobi', 'Mombasa', 'From \$25', Icons.directions_bus),
-//             _buildRouteItem(context, 'Dar es Salaam', 'Zanzibar', 'From \$50', Icons.directions_boat),
-//             _buildRouteItem(context, 'Nairobi', 'Kisumu', 'From \$30', Icons.train),
+//             _buildRouteItem(context, 'Nairobi', 'Mombasa', 'From Tsh 25', Icons.directions_bus),
+//             _buildRouteItem(context, 'Dar es Salaam', 'Zanzibar', 'From Tsh 50', Icons.directions_boat),
+//             _buildRouteItem(context, 'Nairobi', 'Kisumu', 'From Tsh 30', Icons.train),
 //           ],
 //         ),
 //       ),
@@ -702,7 +742,7 @@ class HomePage extends StatelessWidget {
 //       ),
 //       title: Text('${booking.route.origin} → ${booking.route.destination}'),
 //       subtitle: Text('${booking.date} • ${booking.status}'),
-//       trailing: Text('\$${booking.totalPrice.toStringAsFixed(2)}'),
+//       trailing: Text('Tsh ${booking.totalPrice.toStringAsFixed(2)}'),
 //       onTap: () {
 //         // Navigate to booking details
 //       },
@@ -996,7 +1036,7 @@ class HomePage extends StatelessWidget {
 // import '../../blocs/language/language_bloc.dart';
 // import '../../blocs/theme/theme_bloc.dart';
 // import '../../config/routes.dart';
-// import '../../widgets/custom_bottom_nav.dart';
+// import '../../widgets/main_navigation.dart';
 // import '../../utils/localization/app_localizations.dart';
 //
 // class HomePage extends StatelessWidget {

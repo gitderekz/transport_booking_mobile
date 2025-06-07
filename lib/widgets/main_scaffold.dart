@@ -1,7 +1,8 @@
 // lib/widgets/main_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:transport_booking/config/routes.dart';
-import 'package:transport_booking/widgets/custom_bottom_nav.dart';
+import 'package:transport_booking/utils/localization/app_localizations.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 
 class MainScaffold extends StatelessWidget {
   final Widget body;
@@ -24,20 +25,22 @@ class MainScaffold extends StatelessWidget {
     return Scaffold(
       extendBody: extendBody,
       body: body,
-      bottomNavigationBar: showBottomNav ? const CustomBottomNav() : null,
+      // bottomNavigationBar: showBottomNav ? const MainNavigation() : null,
       floatingActionButton: _buildBookNowFAB(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildBookNowFAB(BuildContext context) {
     return FloatingActionButton(
-      onPressed: () => Navigator.pushNamed(context, AppRoutes.search),
+      // onPressed: () => Navigator.pushNamed(context, AppRoutes.search),
+      onPressed: () => Navigator.pop(context),
       backgroundColor: Theme.of(context).colorScheme.primary,
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      heroTag: 'search_fab', // disables Hero animation
       child: Container(
         width: 56,
         height: 56,
@@ -57,9 +60,16 @@ class MainScaffold extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          Icons.search,
-          color: Colors.white,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              // Icons.route,
+              Icons.arrow_back_ios,
+              color: Colors.white,
+            ),
+            // Text(AppLocalizations.of(context)!.translate('trips')!,)//'Book'
+          ],
         ),
       ),
     );

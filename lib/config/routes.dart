@@ -14,6 +14,7 @@ import 'package:transport_booking/pages/profile/edit_profile_page.dart';
 import 'package:transport_booking/pages/profile/profile_page.dart';
 import 'package:transport_booking/pages/settings/settings_page.dart';
 import 'package:transport_booking/pages/tickets/tickets_page.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 
 class AppRoutes {
   static const String initialRoute = '/';
@@ -36,7 +37,7 @@ class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case initialRoute:
-        return MaterialPageRoute(builder: (_) => const OnboardingPage());
+        return MaterialPageRoute(builder: (_) => const MainNavigation());
       case onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingPage());
       case login:

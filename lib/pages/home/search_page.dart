@@ -88,211 +88,208 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('find_your_ride')!,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // From Stop Dropdown
-                        NeuDropdown<Stop>(
-                          value: _selectedFromStop,
-                          hint: AppLocalizations.of(context)!.translate('from'),
-                          items: _stops.map((stop) {
-                            return DropdownMenuItem<Stop>(
-                              value: stop,
-                              child: Text(
-                                stop.stationName,
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (Stop? newValue) {
-                            setState(() {
-                              _selectedFromStop = newValue;
-                              if (_selectedToStop == newValue) {
-                                _selectedToStop = null;
-                              }
-                            });
-                          },
-                          icon: Icons.location_on_outlined,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // To Stop Dropdown
-                        NeuDropdown<Stop>(
-                          value: _selectedToStop,
-                          hint: AppLocalizations.of(context)!.translate('to'),
-                          items: _stops.where((stop) => stop != _selectedFromStop).map((stop) {
-                            return DropdownMenuItem<Stop>(
-                              value: stop,
-                              child: Text(
-                                stop.stationName,
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (Stop? newValue) {
-                            setState(() => _selectedToStop = newValue);
-                          },
-                          icon: Icons.location_on_outlined,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Date Selection
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GlassCard(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                borderRadius: 12,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today_outlined,
-                                      color: Theme.of(context).colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _selectedDate == null
-                                          ? AppLocalizations.of(context)!.translate('select_date')!
-                                          : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                                      style: Theme.of(context).textTheme.bodyLarge,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            NeuButton(
-                              onPressed: () => _selectDate(context),
-                              child: Icon(
-                                Icons.calendar_month_outlined,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Search Button
-                        NeuButton(
-                          onPressed: () {
-                            if (_selectedFromStop == null || _selectedToStop == null || _selectedDate == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate('fill_all_fields')!,
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            context.read<BookingBloc>().add(
-                              BookingStarted(
-                                from: _selectedFromStop!.stationName,
-                                to: _selectedToStop!.stationName,
-                                date: _selectedDate!,
-                              ),
-                            );
-                          },
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(context).colorScheme.primary,
-                              Theme.of(context).colorScheme.secondary,
-                            ],
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('search')!,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Results
-                BlocBuilder<BookingBloc, BookingState>(
-                  builder: (context, state) {
-                    if (state is BookingLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (state is BookingLoadSuccess) {
-                      return Column(
-                        children: state.routes.map((route) {
-                          final transport = _transports.firstWhere(
-                                (t) => t.id == route.transportId,
-                            orElse: () => Transport.empty(),
-                          );
-                          return GlassCard(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: TransportCard(
-                              route: route,
-                              transport: transport,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/booking/seats',
-                                  arguments: {
-                                    'route': route,
-                                    'transport': transport,
-                                  },
-                                );
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
+    return Stack(
+      children: [
+        // Background gradient
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                Theme.of(context).colorScheme.primary.withOpacity(0.05),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        // Content
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('find_your_ride')!,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // From Stop Dropdown
+                      NeuDropdown<Stop>(
+                        value: _selectedFromStop,
+                        hint: AppLocalizations.of(context)!.translate('from'),
+                        items: _stops.map((stop) {
+                          return DropdownMenuItem<Stop>(
+                            value: stop,
+                            child: Text(
+                              stop.stationName,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (Stop? newValue) {
+                          setState(() {
+                            _selectedFromStop = newValue;
+                            if (_selectedToStop == newValue) {
+                              _selectedToStop = null;
+                            }
+                          });
+                        },
+                        icon: Icons.location_on_outlined,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // To Stop Dropdown
+                      NeuDropdown<Stop>(
+                        value: _selectedToStop,
+                        hint: AppLocalizations.of(context)!.translate('to'),
+                        items: _stops.where((stop) => stop != _selectedFromStop).map((stop) {
+                          return DropdownMenuItem<Stop>(
+                            value: stop,
+                            child: Text(
+                              stop.stationName,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (Stop? newValue) {
+                          setState(() => _selectedToStop = newValue);
+                        },
+                        icon: Icons.location_on_outlined,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Date Selection
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GlassCard(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              borderRadius: 12,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _selectedDate == null
+                                        ? AppLocalizations.of(context)!.translate('select_date')!
+                                        : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          NeuButton(
+                            onPressed: () => _selectDate(context),
+                            child: Icon(
+                              Icons.calendar_month_outlined,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Search Button
+                      NeuButton(
+                        onPressed: () {
+                          if (_selectedFromStop == null || _selectedToStop == null || _selectedDate == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!.translate('fill_all_fields')!,
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          context.read<BookingBloc>().add(
+                            BookingStarted(
+                              from: _selectedFromStop!.stationName,
+                              to: _selectedToStop!.stationName,
+                              date: _selectedDate!,
+                            ),
+                          );
+                        },
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.secondary,
+                          ],
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('search')!,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Results
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  if (state is BookingLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is BookingLoadSuccess) {
+                    return Column(
+                      children: state.routes.map((route) {
+                        final transport = _transports.firstWhere(
+                              (t) => t.id == route.transportId,
+                          orElse: () => Transport.empty(),
+                        );
+                        return GlassCard(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: TransportCard(
+                            route: route,
+                            transport: transport,
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/booking/seats',
+                                arguments: {
+                                  'route': route,
+                                  'transport': transport,
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

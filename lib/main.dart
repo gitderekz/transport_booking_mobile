@@ -25,6 +25,10 @@ void main() async {
   final token = await localStorage.getAuthToken();
   final isLoggedIn = token != null && token.isNotEmpty;
 
+  // Check if onboarding has been completed
+  final onboardingCompleted = await localStorage.getOnboardingCompleted();
+  print('onboardingCompleted, ${onboardingCompleted}');
+
   final apiService = ApiService(localStorage: localStorage);
   final authRepository = AuthRepository(apiService: apiService, localStorage: localStorage);
   final transportRepository = TransportRepository(apiService: apiService);
@@ -56,14 +60,15 @@ void main() async {
             create: (context) => BookingBloc(bookingRepository: bookingRepository),
           ),
         ],
-        child: const TransportBookingApp(),
+        child: TransportBookingApp(showOnboarding: !onboardingCompleted,),
       ),
     ),
   );
 }
 
 class TransportBookingApp extends StatelessWidget {
-  const TransportBookingApp({super.key});
+  final bool showOnboarding;
+  const TransportBookingApp({super.key, this.showOnboarding = false});
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +96,7 @@ class TransportBookingApp extends StatelessWidget {
                 GlobalCupertinoLocalizations.delegate,
               ],
               onGenerateRoute: app_routes.AppRoutes.generateRoute,
-              initialRoute: app_routes.AppRoutes.initialRoute,
+              initialRoute: showOnboarding ? app_routes.AppRoutes.onboarding : app_routes.AppRoutes.initialRoute,
             );
           },
         );

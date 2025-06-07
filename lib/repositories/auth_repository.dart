@@ -29,6 +29,7 @@ class AuthRepository {
 
       await localStorage.setToken(token);
       await localStorage.setUser(user);
+      await localStorage.setOnboardingCompleted();
 
       return Right(user);
     } catch (e) {
@@ -57,6 +58,7 @@ class AuthRepository {
 
       await localStorage.setToken(token);
       await localStorage.setUser(user);
+      await localStorage.setOnboardingCompleted();
 
       return Right(user);
     } catch (e) {

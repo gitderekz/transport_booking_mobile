@@ -82,6 +82,17 @@ class LocalStorage {
   // }
   Future<void> setAuthToken(String token) async => await setToken(token);
   Future<String?> getAuthToken() async => await getToken();
+
+  // lib/services/local_storage.dart
+  Future<bool> getOnboardingCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('onboarding_completed') ?? false;
+  }
+
+  Future<void> setOnboardingCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
+  }
 }
 
 

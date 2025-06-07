@@ -24,6 +24,8 @@ class TutorialService {
 class TutorialOverlay {
   static Future<void> showTutorialIfNeeded(BuildContext context) async {
     if (await TutorialService.shouldShowTutorial()) {
+      final navigatorKey = GlobalKey<NavigatorState>();
+
       final steps = [
         TutorialStep(
           title: 'Welcome to Transport Booking',

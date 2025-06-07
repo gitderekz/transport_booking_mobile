@@ -5,7 +5,6 @@ import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/models/booking.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
-import 'package:transport_booking/widgets/main_scaffold.dart';
 
 class TicketsPage extends StatefulWidget {
   const TicketsPage({super.key});
@@ -23,82 +22,77 @@ class _TicketsPageState extends State<TicketsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return
-      MainScaffold(
-      // Scaffold(
-      // extendBody: true,
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.confirmation_number_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 32,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          AppLocalizations.of(context)!.translate('your_tickets')!,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                BlocBuilder<BookingBloc, BookingState>(
-                  builder: (context, state) {
-                    if (state is BookingLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (state is BookingsLoaded) {
-                      return Column(
-                        children: state.bookings.map((booking) =>
-                            GlassCard(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: _buildBookingCard(context, booking),
-                            ),
-                        ).toList(),
-                      );
-                    } else if (state is BookingError) {
-                      return Center(child: Text(state.message));
-                    }
-                    return Center(
-                      child: Text(
-                        AppLocalizations.of(context)!.translate('no_bookings')!,
-                      ),
-                    );
-                  },
-                ),
+    return  Stack(
+      children: [
+        // Background gradient
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                Theme.of(context).colorScheme.primary.withOpacity(0.05),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        // Content
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.confirmation_number_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context)!.translate('your_tickets')!,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  if (state is BookingLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is BookingsLoaded) {
+                    return Column(
+                      children: state.bookings.map((booking) =>
+                          GlassCard(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: _buildBookingCard(context, booking),
+                          ),
+                      ).toList(),
+                    );
+                  } else if (state is BookingError) {
+                    return Center(child: Text(state.message));
+                  }
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('no_bookings')!,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

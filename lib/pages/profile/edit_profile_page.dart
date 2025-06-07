@@ -4,8 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
 import 'package:transport_booking/models/user.dart';
-import 'package:transport_booking/widgets/custom_bottom_nav.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_scaffold.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -42,7 +43,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MainScaffold(
       extendBody: true,
       body: Stack(
         children: [
@@ -83,7 +84,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
         ],
       ),
-      bottomNavigationBar: const CustomBottomNav(),
     );
   }
 

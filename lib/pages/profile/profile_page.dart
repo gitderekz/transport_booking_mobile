@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
-// import 'package:transport_booking/blocks/language/language_bloc.dart';
-// import 'package:transport_booking/blocks/theme/theme_bloc.dart';
 import 'package:transport_booking/blocs/language/language_bloc.dart';
 import 'package:transport_booking/blocs/theme/theme_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
@@ -54,117 +52,114 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildProfileHeader(context),
-                        const SizedBox(height: 24),
-                        _buildProfileActions(context),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('preferences')!,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildThemeSwitch(context),
-                        const SizedBox(height: 16),
-                        _buildLanguageDropdown(context),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('account')!,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildAccountItem(
-                          context,
-                          Icons.history,
-                          AppLocalizations.of(context)!.translate('booking_history')!,
-                              () => Navigator.pushNamed(context, AppRoutes.tickets),
-                        ),
-                        _buildAccountItem(
-                          context,
-                          Icons.help_outline,
-                          AppLocalizations.of(context)!.translate('help')!,
-                              () => Navigator.pushNamed(context, AppRoutes.help),
-                        ),
-                        _buildAccountItem(
-                          context,
-                          Icons.privacy_tip_outlined,
-                          AppLocalizations.of(context)!.translate('privacy')!,
-                              () => Navigator.pushNamed(context, AppRoutes.privacy),
-                        ),
-                        _buildAccountItem(
-                          context,
-                          Icons.logout,
-                          AppLocalizations.of(context)!.translate('logout')!,
-                              () {
-                            context.read<AuthBloc>().add(AuthLogoutRequested());
-                            Navigator.pushNamedAndRemoveUntil(
-                              context, AppRoutes.login, (route) => false,
-                            );
-                          },
-                          isLogout: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
+    return Stack(
+      children: [
+        // Background gradient
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                Theme.of(context).colorScheme.primary.withOpacity(0.05),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        // Content
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildProfileHeader(context),
+                      const SizedBox(height: 24),
+                      _buildProfileActions(context),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('preferences')!,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildThemeSwitch(context),
+                      const SizedBox(height: 16),
+                      _buildLanguageDropdown(context),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.translate('account')!,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildAccountItem(
+                        context,
+                        Icons.history,
+                        AppLocalizations.of(context)!.translate('booking_history')!,
+                            () => Navigator.pushNamed(context, AppRoutes.tickets),
+                      ),
+                      _buildAccountItem(
+                        context,
+                        Icons.help_outline,
+                        AppLocalizations.of(context)!.translate('help')!,
+                            () => Navigator.pushNamed(context, AppRoutes.help),
+                      ),
+                      _buildAccountItem(
+                        context,
+                        Icons.privacy_tip_outlined,
+                        AppLocalizations.of(context)!.translate('privacy')!,
+                            () => Navigator.pushNamed(context, AppRoutes.privacy),
+                      ),
+                      _buildAccountItem(
+                        context,
+                        Icons.logout,
+                        AppLocalizations.of(context)!.translate('logout')!,
+                            () {
+                          context.read<AuthBloc>().add(AuthLogoutRequested());
+                          Navigator.pushNamedAndRemoveUntil(
+                            context, AppRoutes.login, (route) => false,
+                          );
+                        },
+                        isLogout: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

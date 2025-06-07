@@ -6,6 +6,7 @@ import 'package:transport_booking/models/route.dart';
 import 'package:transport_booking/models/transport.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_scaffold.dart';
 import 'package:transport_booking/widgets/neu_button.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -47,7 +48,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MainScaffold(
       extendBody: true,
       body: Stack(
         children: [

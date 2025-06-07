@@ -7,6 +7,7 @@ import 'package:transport_booking/models/transport.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
 import 'package:transport_booking/widgets/main_scaffold.dart';
+import 'package:transport_booking/widgets/neu_button.dart';
 import 'package:transport_booking/widgets/seat_widget.dart';
 
 class SeatSelectionPage extends StatefulWidget {
@@ -103,7 +104,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
                               '${selectedSeats.length} ${AppLocalizations.of(context)!.translate('seats_selected')!}',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            ElevatedButton(
+                            NeuButton(
                               onPressed: () {
                                 context.read<BookingBloc>().add(
                                   BookingSeatsSelected(selectedSeats: selectedSeats),
@@ -118,13 +119,23 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
                                   },
                                 );
                               },
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                              // style: ElevatedButton.styleFrom(
+                              //   shape: RoundedRectangleBorder(
+                              //     borderRadius: BorderRadius.circular(12),
+                              //   ),
+                              // ),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                ],
                               ),
                               child: Text(
                                 AppLocalizations.of(context)!.translate('continue')!,
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -132,6 +143,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 60),
                 ],
               ),
             ),
@@ -190,7 +202,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
     );
   }
 
-  Widget _buildSeatMap(BuildContext context) {
+  Widget _buildSeatMapS(BuildContext context) {
     // 4 columns (2 pairs with space in between)
     const int columns = 4;
     const int rows = 10;
@@ -262,6 +274,84 @@ class _SeatSelectionPageState extends State<SeatSelectionPage> {
       ),
     );
   }
+  Widget _buildSeatMap(BuildContext context) {
+    const int seatColumns = 4;
+    const int totalColumns = 5; // 4 seats + 1 gap column
+    const int rows = 10;
+    const int driverSeatRow = 0;
+    const int driverSeatCol = 4; // last column (in 5-column layout)
+
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: totalColumns,
+            childAspectRatio: 1,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: rows * totalColumns,
+          itemBuilder: (context, index) {
+            final row = index ~/ totalColumns;
+            final col = index % totalColumns;
+
+            // 1️⃣ Driver Seat, Driver Row (row 0)
+            if (row == driverSeatRow) {
+              if (col == driverSeatCol) {
+                return Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.withOpacity(0.2),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.directions_bus, color: Colors.grey),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            }
+
+            // 2️⃣ Add gap between columns 2 & 3
+            if (col == 2) {
+              return const SizedBox.shrink(); // Gap column
+            }
+
+            // 3️⃣ Seat layout (real columns: 0,1,3,4 → map to 0,1,2,3) , Seat numbering starts from row 1
+            final displayCol = col > 2 ? col - 1 : col; // Shift col index if after gap
+            final seatNumber = '${row}${String.fromCharCode(65 + displayCol)}';
+
+            final isAvailable = true; // Replace with real logic
+            final isSelected = selectedSeats.contains(seatNumber);
+
+            return SeatWidget(
+              seatNumber: seatNumber,
+              status: isSelected
+                  ? SeatStatus.selected
+                  : isAvailable
+                  ? SeatStatus.available
+                  : SeatStatus.booked,
+              onTap: isAvailable
+                  ? () {
+                setState(() {
+                  if (isSelected) {
+                    selectedSeats.remove(seatNumber);
+                  } else {
+                    selectedSeats.add(seatNumber);
+                  }
+                });
+              }
+                  : null,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+
 }
 
 
