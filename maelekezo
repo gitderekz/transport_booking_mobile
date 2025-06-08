@@ -1515,13 +1515,65 @@ Driver
 
 -------------------------------------------------
 
+ruhussu bula tarehe
+kutafuta kwenye machaguo
+malipo
+jisajili
 
-Thank you somuch, it did it;
-But i think the space btn col 2 & 3 takes/shares with the column 3 because it appears col 3 is a bit thin compare to others
+thibitisha
+risiti
+njia maarufu
+safari za karibuni
+kielekezi cha chini kurasa za ndani
+badili wasifu
+sitisha tiketi
+angalia taarifa zaidi
 
-Ok,
-I think there is something with inputs captured in there
-
-Can you share the Maintenance -> Input -> Copy and share
+---
 
 
+{
+  message: 'Booking created successfully',
+  booking: {
+    id: 55,
+    booking_reference: 'HS6KVGBJ',
+    user_id: 1,
+    route_id: 1,
+    transport_id: 1,
+    pickup_stop_id: 1,
+    dropoff_stop_id: 4,
+    total_price: '150.00',
+    status: 'pending',
+    payment_status: 'unpaid',
+    payment_method: 'mpesa',
+    notes: 'Payment',
+    created_at: 2025-06-08T15:10:19.000Z,
+    updated_at: 2025-06-08T15:10:19.000Z,
+    origin: 'Dar es Salaam Central',
+    destination: 'Arusha',
+    base_price: '150.00',
+    duration_minutes: 240,
+    transport_type: 'bus',
+    transport_name: 'InterCity Express',
+    pickup_station_name: 'Dar es Salaam Central',
+    pickup_time: '06:30:00',
+    dropoff_station_name: 'Arusha',
+    dropoff_time: '15:00:00',
+    stops: [ [Object], [Object], [Object], [Object] ],
+    seats: [ [Object] ]
+  },
+  seatsBooked: 1
+}
+.
+.
+GIVEN
+lib/pages/booking/confirmation_page.dart
+.
+.
+.
+.
+lib/config/routes.dart
+.
+.
+.
+.

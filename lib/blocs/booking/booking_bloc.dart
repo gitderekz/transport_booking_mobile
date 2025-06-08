@@ -51,6 +51,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         pickupStopId: event.pickupStopId,
         dropoffStopId: event.dropoffStopId,
         seats: event.seats,
+        payment_method: event.paymentMethod,
+        paymentDetails:event.paymentDetails,
+        notes: event.notes,
       );
       // emit(BookingCreated(booking: booking));
 
@@ -127,6 +130,9 @@ print('RESULT: ${result }');
         pickupStopId: event.pickupStopId,
         dropoffStopId: event.dropoffStopId,
         seats: event.seats,
+        payment_method: event.paymentMethod,
+        paymentDetails:event.paymentDetails,
+        notes: event.notes,
       );
 
       result.fold(

@@ -124,23 +124,62 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // From Stop Dropdown
-                      NeuDropdown<Stop>(
-                        value: _selectedFromStop,
-                        hint: AppLocalizations.of(context)!.translate('from'),
-                        items: _stops.map((stop) {
-                          return DropdownMenuItem<Stop>(
-                            value: stop,
-                            child: Text(
-                              stop.stationName,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (Stop? newValue) {
+                      // // From Stop Dropdown
+                      // NeuDropdown<Stop>(
+                      //   value: _selectedFromStop,
+                      //   hint: AppLocalizations.of(context)!.translate('from'),
+                      //   items: _stops.map((stop) {
+                      //     return DropdownMenuItem<Stop>(
+                      //       value: stop,
+                      //       child: Text(
+                      //         stop.stationName,
+                      //         style: Theme.of(context).textTheme.bodyLarge,
+                      //       ),
+                      //     );
+                      //   }).toList(),
+                      //   onChanged: (Stop? newValue) {
+                      //     setState(() {
+                      //       _selectedFromStop = newValue;
+                      //       if (_selectedToStop == newValue) {
+                      //         _selectedToStop = null;
+                      //       }
+                      //     });
+                      //   },
+                      //   icon: Icons.location_on_outlined,
+                      // ),
+                      // SizedBox(
+                      //   width: double.infinity, // or a fixed width if you prefer
+                      //   child: SearchableDropdown<Stop>(
+                      //     value: _selectedFromStop,
+                      //     hint: AppLocalizations.of(context)!.translate('from'),
+                      //     items: _stops.map((stop) {
+                      //       return DropdownMenuItem<Stop>(
+                      //         value: stop,
+                      //         child: Text(
+                      //           stop.stationName,
+                      //           style: Theme.of(context).textTheme.bodyLarge,
+                      //         ),
+                      //       );
+                      //     }).toList(),
+                      //     onChanged: (Stop? newValue) {
+                      //       setState(() {
+                      //         _selectedFromStop = newValue;
+                      //         if (_selectedToStop == newValue) {
+                      //           _selectedToStop = null;
+                      //         }
+                      //       });
+                      //     },
+                      //     icon: Icons.location_on_outlined,
+                      //   ),
+                      // ),
+                      StopAutocompleteField(
+                        hint: AppLocalizations.of(context)!.translate('from')!,
+                        selectedStop: _selectedFromStop,
+                        stops: _stops,
+                        onSelected: (Stop? stop) {
                           setState(() {
-                            _selectedFromStop = newValue;
-                            if (_selectedToStop == newValue) {
+                            _selectedFromStop = stop;
+                            if (_selectedToStop == stop) {
                               _selectedToStop = null;
                             }
                           });
@@ -149,23 +188,53 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // To Stop Dropdown
-                      NeuDropdown<Stop>(
-                        value: _selectedToStop,
-                        hint: AppLocalizations.of(context)!.translate('to'),
-                        items: _stops.where((stop) => stop != _selectedFromStop).map((stop) {
-                          return DropdownMenuItem<Stop>(
-                            value: stop,
-                            child: Text(
-                              stop.stationName,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (Stop? newValue) {
-                          setState(() => _selectedToStop = newValue);
+                      // // To Stop Dropdown
+                      // NeuDropdown<Stop>(
+                      //   value: _selectedToStop,
+                      //   hint: AppLocalizations.of(context)!.translate('to'),
+                      //   items: _stops.where((stop) => stop != _selectedFromStop).map((stop) {
+                      //     return DropdownMenuItem<Stop>(
+                      //       value: stop,
+                      //       child: Text(
+                      //         stop.stationName,
+                      //         style: Theme.of(context).textTheme.bodyLarge,
+                      //       ),
+                      //     );
+                      //   }).toList(),
+                      //   onChanged: (Stop? newValue) {
+                      //     setState(() => _selectedToStop = newValue);
+                      //   },
+                      //   icon: Icons.location_on_outlined,
+                      // ),
+                      // SizedBox(
+                      //   width: double.infinity, // or a fixed width if you prefer
+                      //   child: SearchableDropdown<Stop>(
+                      //     value: _selectedToStop,
+                      //     hint: AppLocalizations.of(context)!.translate('to'),
+                      //     items: _stops.where((stop) => stop != _selectedFromStop).map((stop) {
+                      //       return DropdownMenuItem<Stop>(
+                      //         value: stop,
+                      //         child: Text(
+                      //           stop.stationName,
+                      //           style: Theme.of(context).textTheme.bodyLarge,
+                      //         ),
+                      //       );
+                      //     }).toList(),
+                      //     onChanged: (Stop? newValue) {
+                      //       setState(() => _selectedToStop = newValue);
+                      //     },
+                      //     icon: Icons.location_on_outlined,
+                      //   ),
+                      // ),
+                      StopAutocompleteField(
+                        hint: AppLocalizations.of(context)!.translate('to')!,
+                        selectedStop: _selectedToStop,
+                        stops: _stops.where((stop) => stop != _selectedFromStop).toList(),
+                        onSelected: (Stop? stop) {
+                          setState(() => _selectedToStop = stop);
                         },
                         icon: Icons.location_on_outlined,
+                        enabled: _selectedFromStop != null,
                       ),
                       const SizedBox(height: 16),
 
@@ -209,7 +278,7 @@ class _SearchPageState extends State<SearchPage> {
                       // Search Button
                       NeuButton(
                         onPressed: () {
-                          if (_selectedFromStop == null || _selectedToStop == null || _selectedDate == null) {
+                          if (_selectedFromStop == null || _selectedToStop == null /*|| _selectedDate == null*/) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -227,7 +296,7 @@ class _SearchPageState extends State<SearchPage> {
                             BookingStarted(
                               from: _selectedFromStop!.stationName,
                               to: _selectedToStop!.stationName,
-                              date: _selectedDate!,
+                              date: _selectedDate,
                             ),
                           );
                         },

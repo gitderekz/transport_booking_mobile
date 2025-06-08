@@ -28,6 +28,10 @@ class AuthRegisterRequested extends AuthEvent {
   final String password;
   final String firstName;
   final String lastName;
+  final String? gender;
+  final int? age;
+  final String? languagePref;
+  final String? themePref;
 
   const AuthRegisterRequested({
     this.email,
@@ -35,6 +39,10 @@ class AuthRegisterRequested extends AuthEvent {
     required this.password,
     required this.firstName,
     required this.lastName,
+    this.gender,
+    this.age,
+    this.languagePref,
+    this.themePref,
   });
 
   @override
@@ -42,6 +50,10 @@ class AuthRegisterRequested extends AuthEvent {
     password,
     firstName,
     lastName,
+    gender ?? '',
+    age ?? '',
+    languagePref ?? '',
+    themePref ?? '',
     email ?? '',
     phone ?? '',
   ];

@@ -266,7 +266,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 );
               } else if (state is AuthAuthenticated) {
-                Navigator.pushReplacementNamed(context, AppRoutes.home);
+                Navigator.pushReplacementNamed(context, AppRoutes.initialRoute);
               }
             },
             builder: (context, state) {

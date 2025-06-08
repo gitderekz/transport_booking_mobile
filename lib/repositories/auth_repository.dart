@@ -43,6 +43,10 @@ class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
+    String? gender,
+    int? age,
+    String? languagePref,
+    String? themePref,
   }) async {
     try {
       final response = await apiService.post('/auth/register', {
@@ -51,6 +55,10 @@ class AuthRepository {
         'password': password,
         'first_name': firstName,
         'last_name': lastName,
+        'gender': gender,
+        'age': age,
+        'language_pref': languagePref,
+        'theme_pref': themePref,
       });
 
       final user = User.fromJson(response['user']);

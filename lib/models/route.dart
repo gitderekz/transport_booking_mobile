@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'package:transport_booking/models/stop.dart';
+import 'package:transport_booking/utils/parsers.dart';
 
 class Route extends Equatable {
   final String id;
@@ -35,16 +38,31 @@ class Route extends Equatable {
   });
 
   factory Route.fromJson(Map<String, dynamic> json) {
+    print('ROUTE-MODEL ${json}');
+
     return Route(
       id: json['id'].toString(),
       transportId: json['transport_id'].toString(),
       origin: json['origin'],
       destination: json['destination'],
-      basePrice: double.parse(json['base_price'].toString()),
+
+      // 👇 This safely attempts to parse the base_price
+      basePrice: safeParseDouble(json['base_price']),
+
       durationMinutes: int.parse(json['duration_minutes'].toString()),
-      stops: (json['stops'] as List<dynamic>? ?? [])
-          .map((e) => Stop.fromJson(e))
-          .toList(),
+      stops: //[],
+      (json['stops'] as List<dynamic>? ?? []).map((stop) {
+        if (stop is Map<String, dynamic>) {
+          return Stop.fromJson(stop);
+        } else if (stop is String) {
+          try {
+            return Stop.fromJson(jsonDecode(stop));
+          } catch (e) {
+            return Stop.empty();
+          }
+        }
+        return Stop.empty();
+      }).toList(),
       transportType: json['transport_type'],
       transportName: json['transport_name'],
       pickupStationName: json['pickup_station_name'],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
+import 'package:transport_booking/utils/extensions.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
 import 'package:transport_booking/widgets/neu_button.dart';
@@ -23,6 +24,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   bool _useEmail = true;
   bool _obscurePassword = true;
+  String? _selectedGender;
+  int? _age;
+  String? _selectedLanguage;
+  String? _selectedTheme;
 
   @override
   void dispose() {
@@ -233,6 +238,59 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 16),
 
+                          // Age field
+                          TextFormField(
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Age',
+                              prefixIcon: Icon(Icons.cake_outlined),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Please enter your age';
+                              final age = int.tryParse(value);
+                              if (age == null || age < 1) return 'Enter valid age';
+                              return null;
+                            },
+                            onChanged: (value) => _age = int.tryParse(value),
+                          ),
+                          // Gender selector
+                          DropdownButtonFormField<String>(
+                            value: _selectedGender,
+                            decoration: InputDecoration(labelText: 'Gender'),
+                            items: ['male', 'female'].map((gender) {
+                              return DropdownMenuItem(
+                                value: gender,
+                                child: Text(gender.capitalize()),
+                              );
+                            }).toList(),
+                            onChanged: (value) => _selectedGender = value,
+                            validator: (value) => value == null ? 'Select gender' : null,
+                          ),
+                          // Language preference
+                          DropdownButtonFormField<String>(
+                            value: _selectedLanguage,
+                            decoration: InputDecoration(labelText: 'Language'),
+                            items: ['en', 'sw'].map((lang) {
+                              return DropdownMenuItem(
+                                value: lang,
+                                child: Text(lang == 'en' ? 'English' : 'Swahili'),
+                              );
+                            }).toList(),
+                            onChanged: (value) => _selectedLanguage = value,
+                          ),
+                          // Theme preference
+                          DropdownButtonFormField<String>(
+                            value: _selectedTheme,
+                            decoration: InputDecoration(labelText: 'Theme'),
+                            items: ['light', 'dark', 'system'].map((theme) {
+                              return DropdownMenuItem(
+                                value: theme,
+                                child: Text(theme.capitalize()),
+                              );
+                            }).toList(),
+                            onChanged: (value) => _selectedTheme = value,
+                          ),
+
                           // Password field
                           TextFormField(
                             controller: _passwordController,
@@ -291,6 +349,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         password: _passwordController.text,
                                         firstName: _firstNameController.text,
                                         lastName: _lastNameController.text,
+                                        gender: _selectedGender,
+                                        age: _age,
+                                        languagePref: _selectedLanguage,
+                                        themePref: _selectedTheme,
                                       ),
                                     );
                                   }

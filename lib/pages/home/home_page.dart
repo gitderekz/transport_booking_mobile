@@ -107,6 +107,13 @@ class HomePage extends StatelessWidget {
                                     color: Colors.white.withOpacity(0.8),
                                   ),
                                 ),
+                              // if (user != null)
+                              //   Text(
+                              //     '${user.age} ${user.gender} ${user.themePref} ${user.languagePref} ',
+                              //     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              //       color: Colors.white.withOpacity(0.8),
+                              //     ),
+                              //   ),
                             ],
                           ),
                         ),

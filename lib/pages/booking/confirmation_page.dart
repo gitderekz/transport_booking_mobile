@@ -6,16 +6,20 @@ import 'package:transport_booking/config/routes.dart';
 import 'package:transport_booking/models/booking.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_scaffold.dart';
 import 'package:transport_booking/widgets/neu_button.dart';
 
 class BookingConfirmationPage extends StatelessWidget {
-  const BookingConfirmationPage({super.key});
+  final Booking booking;
+
+  const BookingConfirmationPage({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
-    final booking = ModalRoute.of(context)!.settings.arguments as Booking;
-
-    return Scaffold(
+    if (booking == null) {
+      return const Center(child: Text('Booking information not available'));
+    }
+    return MainScaffold(
       extendBody: true,
       body: Stack(
         children: [
@@ -99,6 +103,16 @@ class BookingConfirmationPage extends StatelessWidget {
                         _buildDetailRow(
                           context,
                           Icons.directions_bus_outlined,
+                          '${booking.route.transportName} (${booking.route.transportType})',
+                        ),
+                        _buildDetailRow(
+                          context,
+                          Icons.route_outlined,
+                          '${booking.route.origin} → ${booking.route.destination}',
+                        ),
+                        _buildDetailRow(
+                          context,
+                          Icons.directions_bus_outlined,
                           '${booking.route.origin} → ${booking.route.destination}',
                         ),
                         _buildDetailRow(
@@ -113,8 +127,18 @@ class BookingConfirmationPage extends StatelessWidget {
                         ),
                         _buildDetailRow(
                           context,
+                          Icons.event_seat_outlined,
+                          'Seats: ${booking.seats.map((s) => s['seat_number']).join(', ')}',
+                        ),
+                        _buildDetailRow(
+                          context,
                           Icons.attach_money_outlined,
                           '\$${booking.totalPrice.toStringAsFixed(2)}',
+                        ),
+                        _buildDetailRow(
+                          context,
+                          Icons.person_outline,
+                          'Passengers: ${booking.seats.map((s) => s['passenger_name']).join(', ')}',
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:flutter/cupertino.dart' as printer;
 
 import '../../models/booking.dart';
 import '../../models/route.dart';
@@ -42,6 +43,9 @@ class BookingRepository {
     required String pickupStopId,
     required String dropoffStopId,
     required List<Map<String, dynamic>> seats,
+    required String? payment_method,
+    required Map<String, dynamic>? paymentDetails,
+    required String? notes,
   }) async {
     try {
       final response = await apiService.post('/bookings', {
@@ -50,11 +54,23 @@ class BookingRepository {
         'pickupStopId': pickupStopId,
         'dropoffStopId': dropoffStopId,
         'seats': seats,
+        'payment_method': payment_method,
+        'paymentDetails': paymentDetails,
+        'notes': notes,
       });
-      print('booking=> ${response['booking']}');
+      // print('booking=> ${response['booking']}');
+      printer.debugPrint('booking=> ${response['booking']}', wrapWidth: 1024);
+      // Ensure the response contains all required fields
+      if (response['booking'] == null) {
+        return Left(Failure(message: 'Invalid booking response from server'));
+      }
+
       final booking = Booking.fromJson(response['booking']);
+      // final booking = Booking.fromJson(response['booking'] as Map<String, dynamic>);
+      print('BOOK: ${booking.toString()}');
       return Right(booking);
     } catch (e) {
+      print('ERROR: ${e.toString()}');
       return Left(Failure(message: e.toString()));
     }
   }
