@@ -3,6 +3,7 @@ import 'package:transport_booking/models/booking.dart';
 import 'package:transport_booking/pages/auth/login_page.dart';
 import 'package:transport_booking/pages/auth/register_page.dart';
 import 'package:transport_booking/pages/booking/confirmation_page.dart';
+import 'package:transport_booking/pages/booking/details_page.dart';
 import 'package:transport_booking/pages/booking/payment_page.dart';
 import 'package:transport_booking/pages/booking/seat_selection_page.dart';
 import 'package:transport_booking/pages/booking/stops_selection_page.dart';
@@ -13,6 +14,7 @@ import 'package:transport_booking/pages/onboarding/onboarding_page.dart';
 import 'package:transport_booking/pages/privacy/privacy_page.dart';
 import 'package:transport_booking/pages/profile/edit_profile_page.dart';
 import 'package:transport_booking/pages/profile/profile_page.dart';
+import 'package:transport_booking/pages/routes/all_routes_page.dart';
 import 'package:transport_booking/pages/settings/settings_page.dart';
 import 'package:transport_booking/pages/tickets/tickets_page.dart';
 import 'package:transport_booking/widgets/main_navigation.dart';
@@ -34,6 +36,8 @@ class AppRoutes {
   static const String help = '/help';
   static const String privacy = '/privacy';
   static const String bookingConfirmation = '/booking/confirmation';
+  static const String allRoutes = '/all-routes';
+  static const String bookingDetails = '/booking-details';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -95,6 +99,13 @@ class AppRoutes {
         );
       case setting:
         return MaterialPageRoute(builder: (_) => const SettingsPage());
+      case allRoutes:
+        return MaterialPageRoute(builder: (_) => const AllRoutesPage());
+      case bookingDetails:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => BookingDetailsPage(booking: args['booking']),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

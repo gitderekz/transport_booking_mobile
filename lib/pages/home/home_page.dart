@@ -6,11 +6,45 @@ import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 import 'package:transport_booking/widgets/transport_type_card.dart';
+import 'package:transport_booking/models/route.dart' as r;
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // // Load popular routes and recent trips
+    // // Add a delay to ensure the widget is mounted (sometimes helps)
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   context.read<BookingBloc>().add(LoadPopularRoutes());
+    //   context.read<BookingBloc>().add(LoadBookings());
+    // });
+    // _loadData();
+    // context.read<BookingBloc>().add(LoadInitialData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentState = context.read<BookingBloc>().state;
+      if (currentState is! HomeDataLoaded) {
+        context.read<BookingBloc>().add(LoadInitialData());
+      }
+    });
+  }
+
+  Future<void> _loadData() async {
+    // Wait for bookings to load
+    await context.read<BookingBloc>().stream.firstWhere(
+            (state) => state is BookingsLoaded || state is BookingError
+    );
+    // Then load popular routes
+    context.read<BookingBloc>().add(LoadPopularRoutes());
+  }
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -199,41 +233,53 @@ class HomePage extends StatelessWidget {
               icon: Icons.directions_bus,
               title: AppLocalizations.of(context)!.translate('bus')!,
               color: Colors.blue,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.search,
-                arguments: {'transportType': 'bus'},
-              ),
+              transportType: 'bus',
+              onTap: () {
+                final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                mainNav?.handleSearchArguments({
+                  'transportType': 'bus',
+                  'preloaded': true,
+                });
+              },
             ),
             TransportTypeCard(
               icon: Icons.train,
               title: AppLocalizations.of(context)!.translate('train')!,
               color: Colors.green,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.search,
-                arguments: {'transportType': 'train'},
-              ),
+              transportType: 'train',
+              onTap: () {
+                final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                mainNav?.handleSearchArguments({
+                  'transportType': 'train',
+                  'preloaded': true,
+                });
+              },
             ),
             TransportTypeCard(
               icon: Icons.airplanemode_active,
               title: AppLocalizations.of(context)!.translate('plane')!,
               color: Colors.purple,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.search,
-                arguments: {'transportType': 'plane'},
-              ),
+              transportType: 'plane',
+              onTap: () {
+                final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                mainNav?.handleSearchArguments({
+                  'transportType': 'plane',
+                  'preloaded': true,
+                });
+              },
             ),
             TransportTypeCard(
               icon: Icons.directions_boat,
               title: AppLocalizations.of(context)!.translate('ship')!,
               color: Colors.orange,
-              onTap: () => Navigator.pushNamed(
-                context,
-                AppRoutes.search,
-                arguments: {'transportType': 'ship'},
-              ),
+              transportType: 'ship',
+              onTap: () {
+                final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                mainNav?.handleSearchArguments({
+                  'transportType': 'ship',
+                  'preloaded': true,
+                });
+              },
             ),
           ],
         ),
@@ -241,59 +287,165 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Widget _buildPopularRoutess(BuildContext context) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     margin: const EdgeInsets.only(bottom: 16),
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(16),
+  //       color: Theme.of(context).colorScheme.surface,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.1),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             Text(
+  //               AppLocalizations.of(context)!.translate('popular_routes')!,
+  //               style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             TextButton(
+  //               onPressed: () {},
+  //               child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 16),
+  //         SingleChildScrollView(
+  //           scrollDirection: Axis.horizontal,
+  //           child: Row(
+  //             children: [
+  //               _buildRouteCard(context, 'Nairobi', 'Kilimanjaro', Icons.directions_bus),
+  //               _buildRouteCard(context, 'Dar es Salaam', 'Zanzibar', Icons.directions_boat),
+  //               _buildRouteCard(context, 'Dodoma', 'Dar es Salaam', Icons.train),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
   Widget _buildPopularRoutes(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.translate('popular_routes')!,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+    print('PopularRoutesLoaded ${PopularRoutesLoaded}');
+    return BlocBuilder<BookingBloc, BookingState>(
+      builder: (context, state) {
+        if (state is HomeDataLoaded/*InitialDataLoaded*/) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: Text(AppLocalizations.of(context)!.translate('see_all')!),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildRouteCard(context, 'Nairobi', 'Kilimanjaro', Icons.directions_bus),
-                _buildRouteCard(context, 'Dar es Salaam', 'Zanzibar', Icons.directions_boat),
-                _buildRouteCard(context, 'Dodoma', 'Dar es Salaam', Icons.train),
               ],
             ),
-          ),
-        ],
-      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('popular_routes')!,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/all-routes');
+                      },
+                      child: Text(AppLocalizations.of(context)!.translate('see_all')!),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: state.popularRoutes.map((route) =>
+                        GestureDetector(
+                          onTap: () {
+                            final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                            mainNav?.handleSearchArguments({
+                              'prefilledRoute': route,
+                            });
+                          },
+                          child: _buildRouteCard(context, route),
+                        ),
+                    ).toList(),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        else if (state is BookingError) {
+          return Text('Error: ${state.message}');
+        }
+        else if (state is BookingLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        // return const CircularProgressIndicator();
+        return const SizedBox.shrink();
+      },
     );
   }
 
-  Widget _buildRouteCard(BuildContext context, String from, String to, IconData icon) {
+  // Widget _buildRouteCards(BuildContext context, String from, String to, IconData icon) {
+  //   return Container(
+  //     width: 180,
+  //     // margin: const EdgeInsets.only(right: 16),
+  //     padding: const EdgeInsets.all(8.0),
+  //     child: GlassCard(
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(16),
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Container(
+  //               width: 40,
+  //               height: 40,
+  //               decoration: BoxDecoration(
+  //                 shape: BoxShape.circle,
+  //                 color: /*Theme.of(context).colorScheme.primary.withOpacity(0.1)*/const Color(0xFFF44336).withOpacity(0.2),
+  //               ),
+  //               child: Icon(icon, color: /*Theme.of(context).colorScheme.primary*/ const Color(0xFFFF7043)),
+  //             ),
+  //             const SizedBox(height: 16),
+  //             Text(
+  //               '$from → $to',
+  //               style: Theme.of(context).textTheme.titleMedium,
+  //             ),
+  //             const SizedBox(height: 8),
+  //             Text(
+  //               'Tsh 25000/=',
+  //               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFFF44336)),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  Widget _buildRouteCard(BuildContext context, r.Route route) {
     return Container(
       width: 180,
-      // margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(8.0),
       child: GlassCard(
         child: Padding(
@@ -306,19 +458,24 @@ class HomePage extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: /*Theme.of(context).colorScheme.primary.withOpacity(0.1)*/const Color(0xFFF44336).withOpacity(0.2),
+                  color: const Color(0xFFF44336).withOpacity(0.2),
                 ),
-                child: Icon(icon, color: /*Theme.of(context).colorScheme.primary*/ const Color(0xFFFF7043)),
+                child: Icon(
+                  _getTransportIcon(route.transportType??'Bus'),
+                  color: const Color(0xFFFF7043),
+                ),
               ),
               const SizedBox(height: 16),
               Text(
-                '$from → $to',
+                '${route.origin} → ${route.destination}',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Tsh 25000/=',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFFF44336)),
+                'Tsh ${route.basePrice.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFF44336),
+                ),
               ),
             ],
           ),
@@ -330,7 +487,7 @@ class HomePage extends StatelessWidget {
   Widget _buildRecentBookings(BuildContext context) {
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
-        if (state is BookingsLoaded && state.bookings.isNotEmpty) {
+        if (state is HomeDataLoaded && state.recentBookings.isNotEmpty/*InitialDataLoaded && state.bookings.isNotEmpty*/) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -352,7 +509,7 @@ class HomePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              ...state.bookings.take(2).map((booking) =>
+              ...state.recentBookings.take(2).map((booking) =>
                   GlassCard(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: ListTile(

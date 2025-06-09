@@ -18,7 +18,7 @@ class TransportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priceFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final priceFormat = NumberFormat.currency(symbol: 'Tsh ', decimalDigits: 0);
     final timeFormat = DateFormat('HH:mm');
 
     return Card(
@@ -70,7 +70,7 @@ class TransportCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'From ${priceFormat.format(route.basePrice)}',
+                    '${priceFormat.format(route.basePrice)}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).primaryColor,

@@ -96,4 +96,48 @@ class BookingRepository {
       return Left(Failure(message: e.toString()));
     }
   }
+
+  // Add these methods to booking_repository.dart
+  Future<Either<Failure, List<Route>>> getPopularRoutes() async {
+    try {
+      final response = await apiService.get('/routes/popular');
+      printer.debugPrint('ROUTES=> ${response}', wrapWidth: 1024);
+      final routes = (response['data'] as List)
+          .map((json) => Route.fromJson(json))
+          .toList();
+      return Right(routes);
+    } catch (e) {
+      print('Error: ${e.toString()}');
+      return Left(Failure(message: e.toString()));
+    }
+  }
+
+  Future<Either<Failure, List<Route>>> getRoutesByTransportType(String type) async {
+    try {
+      final response = await apiService.get('/routes', params: {
+        'transport_type': type,
+      });
+      final routes = (response['data'] as List)
+          .map((json) => Route.fromJson(json))
+          .toList();
+      return Right(routes);
+    } catch (e) {
+      print('Error: ${e.toString()}');
+      return Left(Failure(message: e.toString()));
+    }
+  }
+
+  Future<Either<Failure, List<Route>>> getAllRoutes() async {
+    try {
+      final response = await apiService.get('/routes');
+      print('[Repo] Response: $response');
+      final routes = (response['data'] as List)
+          .map((json) => Route.fromJson(json))
+          .toList();
+      return Right(routes);
+    } catch (e) {
+      print('Error: ${e.toString()}');
+      return Left(Failure(message: e.toString()));
+    }
+  }
 }

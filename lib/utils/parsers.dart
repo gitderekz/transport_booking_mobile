@@ -12,3 +12,11 @@ double safeParseDouble(dynamic value) {
   }
   return 0.0;
 }
+int safeParseInt(dynamic value) {
+  try {
+    return int.parse(value.toString());
+  } catch (e) {
+    print('Failed to parse int from value: $value');
+    return 0;
+  }
+}

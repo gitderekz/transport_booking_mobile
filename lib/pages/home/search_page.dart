@@ -9,18 +9,20 @@ import 'package:transport_booking/services/api_service.dart';
 import 'package:transport_booking/services/local_storage.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 import 'package:transport_booking/widgets/neu_dropdown.dart';
 import 'package:transport_booking/widgets/neu_button.dart';
 import 'package:transport_booking/widgets/transport_card.dart';
+import 'package:transport_booking/models/route.dart' as r;
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  State<SearchPage> createState() => SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class SearchPageState extends State<SearchPage> {
   DateTime? _selectedDate;
   late TransportRepository _transportRepository;
   final LocalStorage localStorage = LocalStorage();
@@ -28,6 +30,11 @@ class _SearchPageState extends State<SearchPage> {
   List<Stop> _stops = [];
   Stop? _selectedFromStop;
   Stop? _selectedToStop;
+  bool _isLoadingStops = true;
+  Map<String, dynamic>? _queuedArguments; // Store arguments until stops load
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
+  HomeDataLoaded? _cachedHomeData;
 
   @override
   void initState() {
@@ -38,7 +45,13 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> _loadInitialData() async {
     await _loadTransports();
-    await _loadStops();
+    await _loadStops().then((_) {
+      // After stops load, process any queued arguments
+      if (_queuedArguments != null) {
+        _processArguments(_queuedArguments!);
+        _queuedArguments = null;
+      }
+    });
   }
 
   Future<void> _loadTransports() async {
@@ -52,12 +65,104 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _loadStops() async {
+    setState(() => _isLoadingStops = true);
     final result = await _transportRepository.getAllStops();
     result.fold(
-          (failure) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load stops: ${failure.message}'))),
-          (stops) => setState(() => _stops = stops),
+          (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load stops: ${failure.message}'))
+        );
+        setState(() => _isLoadingStops = false);
+      },
+          (stops) {
+        setState(() {
+          _stops = stops;
+          _isLoadingStops = false;
+        });
+      },
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null) {
+      if (_isLoadingStops) {
+        // Queue arguments if stops are still loading
+        _queuedArguments = args;
+      } else {
+        _processArguments(args);
+      }
+    }
+  }
+
+  void _processArguments(Map<String, dynamic> args) {
+    if (args['prefilledRoute'] != null) {
+      final route = args['prefilledRoute'] as r.Route;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedFromStop = _stops.firstWhere(
+                (s) => s.stationName == route.origin,
+            orElse: () => Stop.empty(),
+          );
+          _selectedToStop = _stops.firstWhere(
+                (s) => s.stationName == route.destination,
+            orElse: () => Stop.empty(),
+          );
+
+          // Update the text controllers
+          if (_selectedFromStop != null) {
+            _fromController.text = _selectedFromStop!.stationName;
+          }
+          if (_selectedToStop != null) {
+            _toController.text = _selectedToStop!.stationName;
+          }
+        });
+
+        // if (_selectedFromStop != null && _selectedToStop != null) {
+        //   context.read<BookingBloc>().add(
+        //     BookingStarted(
+        //       from: _selectedFromStop!.stationName,
+        //       to: _selectedToStop!.stationName,
+        //       date: _selectedDate,
+        //     ),
+        //   );
+        // }
+        _processSearch();
+      });
+    } else if (args['preloaded'] == true && args['transportType'] != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<BookingBloc>().add(
+          LoadRoutesByTransportType(args['transportType']),
+        );
+      });
+    }
+  }
+
+  void _processSearch() {
+    if (_selectedFromStop != null && _selectedToStop != null) {
+      // Cache current home data before starting search
+      final currentState = context.read<BookingBloc>().state;
+      if (currentState is HomeDataLoaded) {
+        _cachedHomeData = currentState;
+      }
+
+      context.read<BookingBloc>().add(
+        BookingStarted(
+          from: _selectedFromStop!.stationName,
+          to: _selectedToStop!.stationName,
+          date: _selectedDate,
+        ),
+      );
+    }
+  }
+
+  void restoreHomeData() {
+    if (_cachedHomeData != null) {
+      context.read<BookingBloc>().add(RestoreHomeData(_cachedHomeData!));
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -84,6 +189,13 @@ class _SearchPageState extends State<SearchPage> {
     if (picked != null && picked != _selectedDate) {
       setState(() => _selectedDate = picked);
     }
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
   }
 
   @override
@@ -176,11 +288,14 @@ class _SearchPageState extends State<SearchPage> {
                         hint: AppLocalizations.of(context)!.translate('from')!,
                         selectedStop: _selectedFromStop,
                         stops: _stops,
+                        controller: _fromController,
                         onSelected: (Stop? stop) {
                           setState(() {
                             _selectedFromStop = stop;
+                            _fromController.text = stop?.stationName ?? '';
                             if (_selectedToStop == stop) {
                               _selectedToStop = null;
+                              _toController.text = '';
                             }
                           });
                         },
@@ -230,8 +345,12 @@ class _SearchPageState extends State<SearchPage> {
                         hint: AppLocalizations.of(context)!.translate('to')!,
                         selectedStop: _selectedToStop,
                         stops: _stops.where((stop) => stop != _selectedFromStop).toList(),
+                        controller: _toController,
                         onSelected: (Stop? stop) {
-                          setState(() => _selectedToStop = stop);
+                          setState(() {
+                            _selectedToStop = stop;
+                            _toController.text = stop?.stationName ?? '';
+                          });
                         },
                         icon: Icons.location_on_outlined,
                         enabled: _selectedFromStop != null,
@@ -292,13 +411,14 @@ class _SearchPageState extends State<SearchPage> {
                             );
                             return;
                           }
-                          context.read<BookingBloc>().add(
-                            BookingStarted(
-                              from: _selectedFromStop!.stationName,
-                              to: _selectedToStop!.stationName,
-                              date: _selectedDate,
-                            ),
-                          );
+                          // context.read<BookingBloc>().add(
+                          //   BookingStarted(
+                          //     from: _selectedFromStop!.stationName,
+                          //     to: _selectedToStop!.stationName,
+                          //     date: _selectedDate,
+                          //   ),
+                          // );
+                          _processSearch();
                         },
                         gradient: LinearGradient(
                           colors: [
@@ -338,14 +458,29 @@ class _SearchPageState extends State<SearchPage> {
                             route: route,
                             transport: transport,
                             onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/booking/seats',
-                                arguments: {
+                              // Get the parent navigator state
+                              final mainNavState = context.findAncestorStateOfType<MainNavigationState>();
+                              try {
+                                mainNavState?.navigateToSeatSelection(context, {
                                   'route': route,
                                   'transport': transport,
-                                },
-                              );
+                                });
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to navigate: $e')),
+                                );
+                              }
+
+                              // if (mainNavState != null) {
+                              //   // Use the root navigator instead of current context
+                              //   Navigator.of(context, rootNavigator: true).pushNamed(
+                              //     '/booking/seats',
+                              //     arguments: {
+                              //       'route': route,
+                              //       'transport': transport,
+                              //     },
+                              //   );
+                              // }
                             },
                           ),
                         );
@@ -361,6 +496,48 @@ class _SearchPageState extends State<SearchPage> {
       ],
     );
   }
+
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+  //
+  //   if (args != null) {
+  //     if (args['prefilledRoute'] != null) {
+  //       final route = args['prefilledRoute'] as r.Route;
+  //       print('Pre: ${args['prefilledRoute']} : ${route} : ${route.origin} : ${route.destination}');
+  //       print('Stops: ${_stops.length} : ${_stops} : ${_stops.firstWhere((s) => s.stationName == route.origin)} ');
+  //       WidgetsBinding.instance.addPostFrameCallback((_) {
+  //         setState(() {
+  //           _selectedFromStop = _stops.firstWhere(
+  //                 (s) => s.stationName == route.origin,
+  //             orElse: () => Stop.empty(),
+  //           );
+  //           _selectedToStop = _stops.firstWhere(
+  //                 (s) => s.stationName == route.destination,
+  //             orElse: () => Stop.empty(),
+  //           );
+  //         });
+  //         if (_selectedFromStop != null && _selectedToStop != null) {
+  //           context.read<BookingBloc>().add(
+  //             BookingStarted(
+  //               from: _selectedFromStop!.stationName,
+  //               to: _selectedToStop!.stationName,
+  //               date: _selectedDate,
+  //             ),
+  //           );
+  //         }
+  //       });
+  //     }
+  //     else if (args['preloaded'] == true && args['transportType'] != null) {
+  //       WidgetsBinding.instance.addPostFrameCallback((_) {
+  //         context.read<BookingBloc>().add(
+  //           LoadRoutesByTransportType(args['transportType']),
+  //         );
+  //       });
+  //     }
+  //   }
+  // }
 }
 
 

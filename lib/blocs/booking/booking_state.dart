@@ -11,6 +11,15 @@ class BookingInitial extends BookingState {}
 
 class BookingLoading extends BookingState {}
 
+class BookingLoadSuccess extends BookingState {
+  final List<Route> routes;
+
+  const BookingLoadSuccess({required this.routes});
+
+  @override
+  List<Object> get props => [routes];
+}
+
 class BookingsLoaded extends BookingState {
   final List<Booking> bookings;
 
@@ -30,6 +39,15 @@ class BookingCreated extends BookingState {
 }
 
 class BookingCancelled extends BookingState {}
+
+class BookingError extends BookingState {
+  final String message;
+
+  const BookingError({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
 
 class BookingSeatsSelectedState extends BookingState {
   final List<String> selectedSeats;
@@ -53,16 +71,8 @@ class BookingStopsSelectedState extends BookingState {
   List<Object> get props => [pickupStopId, dropoffStopId];
 }
 
-class BookingError extends BookingState {
-  final String message;
+class BookingSubmissionInProgress extends BookingState {}
 
-  const BookingError({required this.message});
-
-  @override
-  List<Object> get props => [message];
-}
-
-// Add these states to your existing state file
 class BookingSubmissionSuccess extends BookingState {
   final Booking booking;
 
@@ -81,12 +91,104 @@ class BookingSubmissionFailure extends BookingState {
   List<Object> get props => [error];
 }
 
-class BookingSubmissionInProgress extends BookingState {}
+class TicketDownloadInProgress extends BookingState {}
 
-class BookingLoadSuccess extends BookingState {
+class TicketDownloadSuccess extends BookingState {}
+
+class TicketDownloadFailure extends BookingState {
+  final String error;
+
+  const TicketDownloadFailure({required this.error});
+
+  @override
+  List<Object> get props => [error];
+}
+
+// Add these states to booking_state.dart
+class PopularRoutesLoaded extends BookingState {
   final List<Route> routes;
-  const BookingLoadSuccess({required this.routes});
+
+  const PopularRoutesLoaded({required this.routes});
 
   @override
   List<Object> get props => [routes];
+}
+class AllRoutesLoaded extends BookingState {
+  final List<Route> routes;
+
+  const AllRoutesLoaded({required this.routes});
+
+  @override
+  List<Object> get props => [routes];
+}
+
+// class InitialDataLoaded extends BookingState {
+//   final List<Booking> bookings;
+//   final List<Route> routes;
+//
+//   const InitialDataLoaded({required this.bookings, required this.routes});
+//
+//   @override
+//   List<Object> get props => [bookings, routes];
+// }
+
+
+class InitialDataLoaded extends BookingState {
+  final List<Booking> bookings;
+  final List<Route> popularRoutes;
+  final List<Route> allRoutes;
+
+  const InitialDataLoaded({
+    required this.bookings,
+    required this.popularRoutes,
+    required this.allRoutes,
+  });
+
+  @override
+  List<Object> get props => [bookings, popularRoutes, allRoutes];
+}
+
+// Add these states
+class HomeDataLoaded extends BookingState {
+  final List<Route> popularRoutes;
+  final List<Booking> recentBookings;
+
+  const HomeDataLoaded({
+    required this.popularRoutes,
+    required this.recentBookings,
+  });
+
+  @override
+  List<Object> get props => [popularRoutes, recentBookings];
+}
+
+class RestoreHomeData extends BookingEvent {
+  final HomeDataLoaded homeData;
+  const RestoreHomeData(this.homeData);
+}
+
+class SearchResultsLoaded extends BookingState {
+  final List<Route> routes;
+  final String from;
+  final String to;
+  final DateTime? date;
+
+  const SearchResultsLoaded({
+    required this.routes,
+    required this.from,
+    required this.to,
+    this.date,
+  });
+
+  @override
+  List<Object> get props => [routes, from, to, date ?? DateTime.now()];
+}
+
+class TicketsLoaded extends BookingState {
+  final List<Booking> bookings;
+
+  const TicketsLoaded({required this.bookings});
+
+  @override
+  List<Object> get props => [bookings];
 }

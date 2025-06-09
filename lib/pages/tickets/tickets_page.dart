@@ -17,7 +17,7 @@ class _TicketsPageState extends State<TicketsPage> {
   @override
   void initState() {
     super.initState();
-    context.read<BookingBloc>().add(LoadBookings());
+    // context.read<BookingBloc>().add(LoadBookings());
   }
 
   @override
@@ -68,9 +68,9 @@ class _TicketsPageState extends State<TicketsPage> {
               const SizedBox(height: 16),
               BlocBuilder<BookingBloc, BookingState>(
                 builder: (context, state) {
-                  if (state is BookingLoading) {
+                  if (state is TicketsLoaded/*BookingLoading*/) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (state is BookingsLoaded) {
+                  } else if (state is InitialDataLoaded) {
                     return Column(
                       children: state.bookings.map((booking) =>
                           GlassCard(
@@ -147,7 +147,7 @@ class _TicketsPageState extends State<TicketsPage> {
           _buildDetailRow(
             context,
             Icons.attach_money,
-            'Total: \$${booking.totalPrice.toStringAsFixed(2)}',
+            'Total: Tsh ${booking.totalPrice.toStringAsFixed(2)}',
           ),
           const SizedBox(height: 16),
           Row(
@@ -312,7 +312,7 @@ class _TicketsPageState extends State<TicketsPage> {
 //             ),
 //             Text('Status: ${booking.status}'),
 //             Text('Payment: ${booking.paymentStatus}'),
-//             Text('Total: \$${booking.totalPrice.toStringAsFixed(2)}'),
+//             Text('Total: Tsh ${booking.totalPrice.toStringAsFixed(2)}'),
 //             const SizedBox(height: 16),
 //             ElevatedButton(
 //               onPressed: () {

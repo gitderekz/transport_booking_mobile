@@ -1,11 +1,12 @@
-// lib/widgets/transport_type_card.dart
 import 'package:flutter/material.dart';
+import 'package:transport_booking/config/routes.dart';
 
 class TransportTypeCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final Color color;
   final VoidCallback onTap;
+  final String transportType;
 
   const TransportTypeCard({
     super.key,
@@ -13,6 +14,7 @@ class TransportTypeCard extends StatelessWidget {
     required this.title,
     required this.color,
     required this.onTap,
+    required this.transportType,
   });
 
   @override

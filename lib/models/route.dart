@@ -38,8 +38,6 @@ class Route extends Equatable {
   });
 
   factory Route.fromJson(Map<String, dynamic> json) {
-    print('ROUTE-MODEL ${json}');
-
     return Route(
       id: json['id'].toString(),
       transportId: json['transport_id'].toString(),
@@ -49,7 +47,8 @@ class Route extends Equatable {
       // 👇 This safely attempts to parse the base_price
       basePrice: safeParseDouble(json['base_price']),
 
-      durationMinutes: int.parse(json['duration_minutes'].toString()),
+      // durationMinutes: int.parse(json['duration_minutes'].toString()),
+      durationMinutes: safeParseInt(json['duration_minutes']),
       stops: //[],
       (json['stops'] as List<dynamic>? ?? []).map((stop) {
         if (stop is Map<String, dynamic>) {

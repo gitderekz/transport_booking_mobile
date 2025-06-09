@@ -332,6 +332,7 @@ class StopAutocompleteField extends StatefulWidget {
   final ValueChanged<Stop?> onSelected;
   final IconData? icon;
   final bool enabled;
+  final TextEditingController? controller;
 
   const StopAutocompleteField({
     super.key,
@@ -341,6 +342,7 @@ class StopAutocompleteField extends StatefulWidget {
     required this.onSelected,
     this.icon,
     this.enabled = true,
+    this.controller,
   });
 
   @override
@@ -351,25 +353,57 @@ class _StopAutocompleteFieldState extends State<StopAutocompleteField> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   final FocusNode _focusNode = FocusNode();
-  final TextEditingController _controller = TextEditingController();
+  // final TextEditingController _controller = TextEditingController();
+  late TextEditingController _controller;
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _focusNode.addListener(() {
+  //     if (!_focusNode.hasFocus) {
+  //       _removeOverlay();
+  //     }
+  //   });
+  //   if (widget.selectedStop != null) {
+  //     _controller.text = widget.selectedStop!.stationName;
+  //   }
+  // }
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) {
-        _removeOverlay();
-      }
-    });
+    _controller = widget.controller ?? TextEditingController();
     if (widget.selectedStop != null) {
       _controller.text = widget.selectedStop!.stationName;
     }
+    _focusNode.addListener(_onFocusChanged);
   }
+
+  @override
+  void didUpdateWidget(covariant StopAutocompleteField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedStop != oldWidget.selectedStop) {
+      if (widget.selectedStop != null) {
+        _controller.text = widget.selectedStop!.stationName;
+      } else {
+        _controller.clear();
+      }
+    }
+  }
+
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      _removeOverlay();
+    }
+  }
+
 
   @override
   void dispose() {
     _focusNode.dispose();
-    _controller.dispose();
+    // Only dispose if we created the controller ourselves
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     _removeOverlay();
     super.dispose();
   }
@@ -517,33 +551,36 @@ class _StopAutocompleteFieldState extends State<StopAutocompleteField> {
                     FocusNode focusNode,
                     VoidCallback onFieldSubmitted,
                     ) {
-                  return TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    decoration: InputDecoration(
-                      hintText: widget.hint,
-                      border: InputBorder.none,
-                      hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  return Material(
+                    type: MaterialType.transparency, // Use transparency to maintain glass effect
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      decoration: InputDecoration(
+                        hintText: widget.hint,
+                        border: InputBorder.none,
+                        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      enabled: widget.enabled,
+                      onChanged: (value) {
+                        if (_focusNode.hasFocus && value.isNotEmpty) {
+                          final filtered = widget.stops.where((stop) => stop.stationName
+                              .toLowerCase()
+                              .contains(value.toLowerCase()));
+                          _showOverlay(filtered);
+                        } else {
+                          _removeOverlay();
+                        }
+                      },
+                      onTap: () {
+                        if (_controller.text.isEmpty) {
+                          _showOverlay(widget.stops);
+                        }
+                      },
                     ),
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    enabled: widget.enabled,
-                    onChanged: (value) {
-                      if (_focusNode.hasFocus && value.isNotEmpty) {
-                        final filtered = widget.stops.where((stop) => stop.stationName
-                            .toLowerCase()
-                            .contains(value.toLowerCase()));
-                        _showOverlay(filtered);
-                      } else {
-                        _removeOverlay();
-                      }
-                    },
-                    onTap: () {
-                      if (_controller.text.isEmpty) {
-                        _showOverlay(widget.stops);
-                      }
-                    },
                   );
                 },
                 optionsViewBuilder: (
