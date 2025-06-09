@@ -132,6 +132,14 @@ class DownloadTicket extends BookingEvent {
   List<Object> get props => [bookingId];
 }
 
+class CacheCurrentState extends BookingEvent {
+  const CacheCurrentState();
+}
+
+class RestoreCachedState extends BookingEvent {
+  const RestoreCachedState();
+}
+
 // Add these events to booking_event.dart
 class LoadPopularRoutes extends BookingEvent {}
 class LoadRoutesByTransportType extends BookingEvent {
@@ -141,6 +149,16 @@ class LoadRoutesByTransportType extends BookingEvent {
 
   @override
   List<Object> get props => [transportType];
+}
+class RestoreHomeData extends BookingEvent {
+  final HomeDataLoaded homeData;
+  const RestoreHomeData(this.homeData);
+
+  @override
+  List<Object> get props => [homeData];
+}
+class RestorePreviousState extends BookingEvent {
+  const RestorePreviousState();
 }
 class LoadAllRoutes extends BookingEvent {}
 

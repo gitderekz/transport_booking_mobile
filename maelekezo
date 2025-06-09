@@ -11,25 +11,36 @@ malipo
 jisajili
 thibitisha
 risiti
-
 njia maarufu
 safari za karibuni
+
 kielekezi cha chini kurasa za ndani
 badili wasifu
 sitisha tiketi
 angalia taarifa zaidi
 
 ---
-Given;
---->lib/pages/home/search_page.dart
+Thanks,
+--->now inside ['lib/pages/booking/details_page.dart']  lets add download button and other cool stuffs, to save the receipt just like in confirmation page
+--->Also implement delete function in backend but don't delete instead update 'status' column in bookings to 'cancelled'
+--->If possible improve the look of ['lib/pages/booking/details_page.dart' and 'lib/pages/tickets/tickets_page.dart']
+GIVEN
+--->backend/controllers/bookingController.js
 
 
---->lib/widgets/neu_dropdown.dart
 
-I have a main navigation where there are 5 screens switched from the bottom nav
-
-Now the problem is that now i want to open search screen by clicking on the TransportType card/widget and not bottom nav, Also pass argument to it
-How should i do it without destroying pages/widgets hierarchy ?
+--->lib/pages/booking/details_page.dart
 
 
-M
+
+--->lib/pages/booking/details_page.dart
+
+
+
+
+1. Lets solve the problem of everytime i after logging it present the tutorial screen even if it is not the first time
+2.
+
+
+
+

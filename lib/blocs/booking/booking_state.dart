@@ -162,10 +162,10 @@ class HomeDataLoaded extends BookingState {
   List<Object> get props => [popularRoutes, recentBookings];
 }
 
-class RestoreHomeData extends BookingEvent {
-  final HomeDataLoaded homeData;
-  const RestoreHomeData(this.homeData);
-}
+// class RestoreHomeData extends BookingEvent {
+//   final HomeDataLoaded homeData;
+//   const RestoreHomeData(this.homeData);
+// }
 
 class SearchResultsLoaded extends BookingState {
   final List<Route> routes;

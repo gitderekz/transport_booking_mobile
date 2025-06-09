@@ -21,59 +21,90 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
     // // Load popular routes and recent trips
     // // Add a delay to ensure the widget is mounted (sometimes helps)
     // WidgetsBinding.instance.addPostFrameCallback((_) {
     //   context.read<BookingBloc>().add(LoadPopularRoutes());
     //   context.read<BookingBloc>().add(LoadBookings());
     // });
-    // _loadData();
+
     // context.read<BookingBloc>().add(LoadInitialData());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentState = context.read<BookingBloc>().state;
-      if (currentState is! HomeDataLoaded) {
-        context.read<BookingBloc>().add(LoadInitialData());
-      }
-    });
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final currentState = context.read<BookingBloc>().state;
+    //   if (currentState is! HomeDataLoaded) {
+    //     context.read<BookingBloc>().add(LoadInitialData());
+    //   }
+    // });
+
+    // // Wait for bookings to load
+    // await context.read<BookingBloc>().stream.firstWhere(
+    //         (state) => state is BookingsLoaded || state is BookingError
+    // );
+    // // Then load popular routes
+    // context.read<BookingBloc>().add(LoadPopularRoutes());
+
+    // // First check if we already have data to avoid unnecessary reloads
+    // final currentState = context.read<BookingBloc>().state;
+    // if (currentState is! InitialDataLoaded && currentState is! HomeDataLoaded) {
+    //   context.read<BookingBloc>().add(LoadInitialData());
+    // }
+
+    final currentState = context.read<BookingBloc>().state;
+    if (currentState is! InitialDataLoaded &&
+        currentState is! HomeDataLoaded &&
+        currentState is! BookingsLoaded) {
+      context.read<BookingBloc>().add(LoadInitialData());
+    }
   }
 
-  Future<void> _loadData() async {
-    // Wait for bookings to load
-    await context.read<BookingBloc>().stream.firstWhere(
-            (state) => state is BookingsLoaded || state is BookingError
-    );
-    // Then load popular routes
-    context.read<BookingBloc>().add(LoadPopularRoutes());
-  }
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 320,
-          floating: true,
-          pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
-            // title: Text(AppLocalizations.of(context)!.translate('home')!),
-            background: _buildProfileHeader(context),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildTransportTypes(context),
-                const SizedBox(height: 24),
-                _buildPopularRoutes(context),
-                const SizedBox(height: 24),
-                _buildRecentBookings(context),
-                const SizedBox(height: 80),
-              ],
+    return BlocBuilder<BookingBloc, BookingState>(
+      builder: (context, state) {
+        return CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 320,
+              floating: true,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                // title: Text(AppLocalizations.of(context)!.translate('home')!),
+                background: _buildProfileHeader(context),
+              ),
             ),
-          ),
-        ),
-      ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildTransportTypes(context),
+                    const SizedBox(height: 24),
+                    _buildPopularRoutes(context),
+                    const SizedBox(height: 24),
+                    _buildRecentBookings(context),
+                    const SizedBox(height: 80),
+                    // _buildTransportTypes(context),
+                    // const SizedBox(height: 24),
+                    // BlocBuilder<BookingBloc, BookingState>(
+                    //   builder: (context, state) => _buildPopularRoutes(context),
+                    // ),
+                    // const SizedBox(height: 24),
+                    // BlocBuilder<BookingBloc, BookingState>(
+                    //   builder: (context, state) => _buildRecentBookings(context),
+                    // ),
+                    // const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }
     );
   }
 
@@ -336,10 +367,12 @@ class _HomePageState extends State<HomePage> {
   //   );
   // }
   Widget _buildPopularRoutes(BuildContext context) {
-    print('PopularRoutesLoaded ${PopularRoutesLoaded}');
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
-        if (state is HomeDataLoaded/*InitialDataLoaded*/) {
+        if (state is InitialDataLoaded || state is HomeDataLoaded) {
+          final routes = state is InitialDataLoaded
+              ? state.popularRoutes
+              : (state as HomeDataLoaded).popularRoutes;
           return Container(
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 16),
@@ -368,7 +401,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/all-routes');
+                        final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                        mainNav?.onItemTapped(1);
+                        // Navigator.pushNamed(context, '/all-routes');
                       },
                       child: Text(AppLocalizations.of(context)!.translate('see_all')!),
                     ),
@@ -378,7 +413,7 @@ class _HomePageState extends State<HomePage> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: state.popularRoutes.map((route) =>
+                    children: routes.map((route) =>
                         GestureDetector(
                           onTap: () {
                             final mainNav = context.findAncestorStateOfType<MainNavigationState>();
@@ -487,7 +522,22 @@ class _HomePageState extends State<HomePage> {
   Widget _buildRecentBookings(BuildContext context) {
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
-        if (state is HomeDataLoaded && state.recentBookings.isNotEmpty/*InitialDataLoaded && state.bookings.isNotEmpty*/) {
+        if (state is InitialDataLoaded || state is HomeDataLoaded || state is BookingsLoaded) {
+
+          final bookings = state is InitialDataLoaded
+              ? state.bookings
+              : state is HomeDataLoaded
+              ? state.recentBookings
+              : (state as BookingsLoaded).bookings;
+
+
+          if (bookings.isEmpty) {
+            return Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('no_recent_trips')!,
+              ),
+            );
+          }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -502,14 +552,16 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, AppRoutes.tickets);
+                      final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                      mainNav?.onItemTapped(3);
+                      // Navigator.pushNamed(context, AppRoutes.tickets);
                     },
                     child: Text(AppLocalizations.of(context)!.translate('see_all')!),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              ...state.recentBookings.take(2).map((booking) =>
+              ...bookings/*recentBookings*/.take(2).map((booking) =>
                   GlassCard(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: ListTile(
@@ -543,6 +595,8 @@ class _HomePageState extends State<HomePage> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: _getStatusColor(booking.status),),
                       ),
                       onTap: () {
+                        final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                        mainNav?.onItemTapped(3);
                         // Navigate to booking details
                       },
                     ),

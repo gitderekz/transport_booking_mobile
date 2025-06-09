@@ -11,6 +11,11 @@ part 'booking_state.dart';
 
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
   final BookingRepository bookingRepository;
+  BookingState? _previousState; // Add this line to track previous state
+  InitialDataLoaded? _cachedInitialData;
+  HomeDataLoaded? _cachedHomeData;
+  TicketsLoaded? _cachedTicketsData;
+  AllRoutesLoaded? _cachedRoutesData;
 
   BookingBloc({required this.bookingRepository}) : super(BookingInitial()) {
     on<LoadBookings>(_onLoadBookings);
@@ -18,15 +23,75 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     on<CancelBooking>(_onCancelBooking);
     on<BookingSeatsSelected>(_onSeatsSelected);
     on<BookingStopsSelected>(_onStopsSelected);
-    on<BookingStarted>(_onBookingStarted);
+    // on<BookingStarted>(_onBookingStarted);
+    on<BookingStarted>((event, emit) async {
+      _previousState = state;
+      emit(BookingLoading());
+      try {
+        final result = await bookingRepository.searchRoutes(
+          from: event.from,
+          to: event.to,
+          date: event.date,
+        );
+        result.fold(
+              (failure) => emit(BookingError(message: failure.message)),
+              (routes) => emit(BookingLoadSuccess(routes: routes)),
+        );
+      } catch (e) {
+        emit(BookingError(message: 'Failed to search routes: ${e.toString()}'));
+      }
+    });
     on<BookingSubmitted>(_onBookingSubmitted);
     on<DownloadTicket>(_onDownloadTicket);
     on<LoadPopularRoutes>(_onLoadPopularRoutes);
     on<LoadRoutesByTransportType>(_onLoadRoutesByTransportType);
     on<LoadAllRoutes>(_onLoadAllRoutes);
     on<LoadInitialData>(_onLoadInitialData);
+    on<RestoreHomeData>(_onRestoreHomeData);
+    on<CacheCurrentState>(_onCacheCurrentState);
+    on<RestoreCachedState>(_onRestoreCachedState);
+    on<RestorePreviousState>((event, emit) {
+      if (_previousState != null) {
+        emit(_previousState!);
+      } else {
+        add(LoadInitialData());
+      }
+    });
   }
 
+  FutureOr<void> _onCacheCurrentState(
+      CacheCurrentState event,
+      Emitter<BookingState> emit,
+      ) {
+    final currentState = state;
+    if (currentState is InitialDataLoaded) {
+      _cachedInitialData = currentState;
+    } else if (currentState is HomeDataLoaded) {
+      _cachedHomeData = currentState;
+    } else if (currentState is TicketsLoaded) {
+      _cachedTicketsData = currentState;
+    } else if (currentState is AllRoutesLoaded) {
+      _cachedRoutesData = currentState;
+    }
+  }
+
+  FutureOr<void> _onRestoreCachedState(
+      RestoreCachedState event,
+      Emitter<BookingState> emit,
+      ) {
+    if (_cachedInitialData != null) {
+      emit(_cachedInitialData!);
+    } else if (_cachedHomeData != null) {
+      emit(_cachedHomeData!);
+    } else if (_cachedTicketsData != null) {
+      emit(_cachedTicketsData!);
+    } else if (_cachedRoutesData != null) {
+      emit(_cachedRoutesData!);
+    } else {
+      emit(BookingInitial());
+      add(LoadInitialData());
+    }
+  }
   FutureOr<void> _onLoadBookings(
       LoadBookings event,
       Emitter<BookingState> emit,
@@ -106,6 +171,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       BookingStarted event,
       Emitter<BookingState> emit,
       ) async {
+    _previousState = state; // Store current state before searching
     emit(BookingLoading());
     try {
       final result = await bookingRepository.searchRoutes(
@@ -113,7 +179,6 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         to: event.to,
         date: event.date,
       );
-print('RESULT: ${result }');
       result.fold(
             (failure) => emit(BookingError(message: failure.message)),
             (routes) => emit(BookingLoadSuccess(routes: routes)),
@@ -226,6 +291,13 @@ print('RESULT: ${result }');
     } catch (e) {
       emit(BookingError(message: e.toString()));
     }
+  }
+
+  FutureOr<void> _onRestoreHomeData(
+      RestoreHomeData event,
+      Emitter<BookingState> emit,
+      ) {
+    emit(event.homeData);
   }
 
   // FutureOr<void> _onLoadInitialData(

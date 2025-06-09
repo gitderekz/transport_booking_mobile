@@ -34,7 +34,7 @@ class SearchPageState extends State<SearchPage> {
   Map<String, dynamic>? _queuedArguments; // Store arguments until stops load
   final TextEditingController _fromController = TextEditingController();
   final TextEditingController _toController = TextEditingController();
-  HomeDataLoaded? _cachedHomeData;
+  HomeDataLoaded? cachedHomeData;
 
   @override
   void initState() {
@@ -144,9 +144,10 @@ class SearchPageState extends State<SearchPage> {
   void _processSearch() {
     if (_selectedFromStop != null && _selectedToStop != null) {
       // Cache current home data before starting search
+      context.read<BookingBloc>().add(CacheCurrentState());
       final currentState = context.read<BookingBloc>().state;
       if (currentState is HomeDataLoaded) {
-        _cachedHomeData = currentState;
+        cachedHomeData = currentState;
       }
 
       context.read<BookingBloc>().add(
@@ -160,9 +161,11 @@ class SearchPageState extends State<SearchPage> {
   }
 
   void restoreHomeData() {
-    if (_cachedHomeData != null) {
-      context.read<BookingBloc>().add(RestoreHomeData(_cachedHomeData!));
+    context.read<BookingBloc>().add(RestoreCachedState());
+    if (cachedHomeData != null) {
+      context.read<BookingBloc>().add(RestoreHomeData(cachedHomeData!));
     }
+    context.read<BookingBloc>().add(RestorePreviousState());
   }
 
   Future<void> _selectDate(BuildContext context) async {

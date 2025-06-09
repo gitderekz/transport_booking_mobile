@@ -114,5 +114,19 @@
   "download_ticket": "Descargar Boleto",
   "back_to_home": "Volver al inicio",
   "confirmation_message": "Tu reserva ha sido confirmada con éxito.",
-  "book_ride": "Reservar viaje"
+  "book_ride": "Reservar viaje",
+  "confirm_cancel": "Confirmar cancelación",
+  "cancel_booking_confirmation": "¿Está seguro de que desea cancelar la reserva?",
+  "no": "No",
+  "yes": "Sí",
+  "special_notes": "Notas especiales",
+  "passenger_details": "Detalles del pasajero",
+  "age": "Edad",
+  "phone_number": "Número de teléfono",
+  "account_holder_name": "Nombre del titular de la cuenta",
+  "paypal_email": "Correo de PayPal",
+  "payment_method": "Método de pago",
+  "manage_your_bookings": "Gestiona tus reservas",
+  "no_bookings_message": "Aún no tienes ninguna reserva.",
+  "try_again": "Intentar de nuevo"
 }

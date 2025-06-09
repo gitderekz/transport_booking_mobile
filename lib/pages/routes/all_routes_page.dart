@@ -43,11 +43,15 @@ class _AllRoutesPageState extends State<AllRoutesPage> {
         BlocBuilder<BookingBloc, BookingState>(
           builder: (context, state) {
             print('[UI] Current state: $state'); // 👈 Log state
-            if (state is InitialDataLoaded) {
-              print('[UI] Loaded ${state.allRoutes.length} routes');
+            if (state is InitialDataLoaded || state is AllRoutesLoaded) {
+              final routes = state is InitialDataLoaded
+                  ? state.allRoutes
+                  : (state as AllRoutesLoaded).routes;
+
+              print('[UI] Loaded ${routes.length} routes');
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: state.allRoutes.length + 1,
+                itemCount: routes.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return Padding(
@@ -61,7 +65,7 @@ class _AllRoutesPageState extends State<AllRoutesPage> {
                     );
                   }
 
-                  final route = state.allRoutes[index - 1];
+                  final route = routes[index - 1];
                   return GlassCard(
                     margin: const EdgeInsets.only(bottom: 16),
                     child: ListTile(

@@ -15,6 +15,11 @@ class TutorialService {
     await prefs.setBool(_tutorialKey, true);
   }
 
+  static Future<bool> isTutorialCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_tutorialKey) ?? false;
+  }
+
   static Future<void> resetTutorial() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tutorialKey);

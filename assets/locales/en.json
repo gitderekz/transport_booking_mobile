@@ -114,5 +114,19 @@
   "download_ticket": "Download Ticket",
   "back_to_home": "Back to Home",
   "confirmation_message": "Your booking has been confirmed successfully.",
-  "book_ride": "Book Ride"
+  "book_ride": "Book Ride",
+  "confirm_cancel": "Confirm Cancel",
+  "cancel_booking_confirmation": "Are you sure you want to cancel the booking?",
+  "no": "No",
+  "yes": "Yes",
+  "special_notes": "Special Notes",
+  "passenger_details": "Passenger Details",
+  "age": "Age",
+  "phone_number": "Phone Number",
+  "account_holder_name": "Account Holder Name",
+  "paypal_email": "PayPal Email",
+  "payment_method": "Payment Method",
+  "manage_your_bookings": "Manage Your Bookings",
+  "no_bookings_message": "You don't have any bookings yet.",
+  "try_again": "Try Again"
 }

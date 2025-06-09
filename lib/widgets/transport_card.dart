@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart'hide Route;
 import 'package:intl/intl.dart';
+import 'package:transport_booking/utils/localization/app_localizations.dart';
 
 import '../models/route.dart';
 import '../models/transport.dart';
@@ -78,7 +79,7 @@ class TransportCard extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: onTap,
-                    child: Text('Book Now'),
+                    child: Text(AppLocalizations.of(context)!.translate('book_now')!),
                   ),
                 ],
               ),

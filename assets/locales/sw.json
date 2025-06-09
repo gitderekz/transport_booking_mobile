@@ -114,5 +114,20 @@
   "download_ticket": "Pakua Tiketi",
   "back_to_home": "Rudi Nyumbani",
   "confirmation_message": "Uhifadhi wako umethibitishwa kwa mafanikio.",
-  "book_ride": "Weka Safari"
+  "book_ride": "Weka Safari",
+  "confirm_cancel": "Thibitisha kughairi",
+  "cancel_booking_confirmation": "Je, una uhakika unataka kughairi nafasi?",
+  "no": "Hapana",
+  "yes": "Ndiyo",
+  "special_notes": "Maelezo Maalum",
+  "passenger_details": "Maelezo ya Abiria",
+  "age": "Umri",
+  "phone_number": "Nambari ya Simu",
+  "account_holder_name": "Jina la Mmiliki wa Akaunti",
+  "paypal_email": "Barua Pepe ya PayPal",
+  "payment_method": "Njia ya Malipo",
+  "manage_your_bookings": "Dhibiti Nafasi Zako",
+  "no_bookings_message": "Huna nafasi yoyote bado.",
+  "try_again": "Jaribu Tena"
+
 }

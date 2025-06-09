@@ -159,7 +159,7 @@ class _PaymentPageState extends State<PaymentPage> {
               controller: _emailController,
               decoration: _inputDecoration(
                 context,
-                'PayPal Email',
+                AppLocalizations.of(context)!.translate('paypal_email')!,
                 Icons.email_outlined,
               ),
               keyboardType: TextInputType.emailAddress,
@@ -172,7 +172,7 @@ class _PaymentPageState extends State<PaymentPage> {
               controller: _nameController,
               decoration: _inputDecoration(
                 context,
-                'Account Holder Name',
+                AppLocalizations.of(context)!.translate('account_holder_name')!,
                 Icons.person_outline,
               ),
               validator: (value) => value?.isEmpty ?? true
@@ -196,7 +196,7 @@ class _PaymentPageState extends State<PaymentPage> {
               controller: _phoneController,
               decoration: _inputDecoration(
                 context,
-                'Phone Number',
+                AppLocalizations.of(context)!.translate('phone_number')!,
                 Icons.phone_outlined,
               ),
               keyboardType: TextInputType.phone,
@@ -301,7 +301,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             value: _selectedPaymentMethod,
                             decoration: _inputDecoration(
                               context,
-                              'Payment Method',
+                              AppLocalizations.of(context)!.translate('payment_method')!,
                               Icons.payment,
                             ),
                             items: [
@@ -323,7 +323,7 @@ class _PaymentPageState extends State<PaymentPage> {
                           _buildPaymentMethodFields(context),
                           const SizedBox(height: 16),
                           ExpansionTile(
-                            title: Text('Passenger Details'),
+                            title: Text(AppLocalizations.of(context)!.translate('passenger_details')!),
                             children: widget.selectedSeats.map((seat) {
                               return Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -342,7 +342,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                               .firstWhere((p) => p['seat_number'] == seat,
                                               orElse: () => {})['passenger_name'],
                                           decoration: InputDecoration(
-                                            labelText: 'Name for Seat $seat',
+                                            labelText: '${AppLocalizations.of(context)!.translate('name_for_seat')!} $seat',
                                             suffixIcon: user != null ? IconButton(
                                               icon: Icon(
                                                 _useLoggedInUserDetails
@@ -367,7 +367,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                             initialValue: _passengerDetails
                                                 .firstWhere((p) => p['seat_number'] == seat,
                                                 orElse: () => {})['passenger_age'],
-                                            decoration: InputDecoration(labelText: 'Age'),
+                                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.translate('age')!),
                                             keyboardType: TextInputType.number,
                                             onChanged: (value) => _updatePassengerDetail(seat, 'age', value),
                                           ),
@@ -378,7 +378,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                             value: _passengerDetails
                                                 .firstWhere((p) => p['seat_number'] == seat,
                                                 orElse: () => {})['passenger_gender'],
-                                            decoration: InputDecoration(labelText: 'Gender'),
+                                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.translate('gender')!),
                                             items: ['male', 'female', 'prefer not to say']
                                                 .map((g) => DropdownMenuItem(
                                               value: g,
@@ -401,7 +401,7 @@ class _PaymentPageState extends State<PaymentPage> {
                             controller: _notesController,
                             decoration: _inputDecoration(
                               context,
-                              'Special Notes',
+                              AppLocalizations.of(context)!.translate('special_notes')!,
                               Icons.note_add_outlined,
                             ),
                             maxLines: 3,

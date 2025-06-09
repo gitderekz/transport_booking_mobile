@@ -40,8 +40,11 @@ class MainNavigationState extends State<MainNavigation> {
       const TicketsPage(),
       const ProfilePage(),
     ];
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      TutorialOverlay.showTutorialIfNeeded(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final shouldShow = await TutorialService.shouldShowTutorial();
+      if (shouldShow && mounted) {
+        TutorialOverlay.showTutorialIfNeeded(context);
+      }
     });
   }
 
@@ -155,18 +158,22 @@ class MainNavigationState extends State<MainNavigation> {
     );
   }
 
-  void _onItemTapped(int index) {
+  void onItemTapped(int index) {
     if (_currentIndex != index) {
+      print('INDEX, ${_currentIndex} - ${index} ');
       // If leaving search tab
       if (_currentIndex == 2) {
+        _restoreHomeState();
+        print('INAITA, ${_currentIndex == 2}  ');
         _searchPageKey.currentState?.restoreHomeData();
       }
 
+      print('MWISHO, ${_currentIndex == 2}  ');
       setState(() => _currentIndex = index);
     }
   }
 
-//   void _onItemTapped(int index) {
+//   void onItemTapped(int index) {
 //     if (_currentIndex != index) {
 //       // If leaving search tab, restore home data
 //       if (_currentIndex == 2) { // 2 is search tab index
@@ -178,7 +185,7 @@ class MainNavigationState extends State<MainNavigation> {
 //       setState(() => _currentIndex = index);
 //     }
 //   }
-  // void _onItemTapped(int index) {
+  // void onItemTapped(int index) {
   //   if (_currentIndex != index) {
   //     // Reset booking state when switching away from search
   //     if (index != 2) { // 2 is the search tab index
@@ -188,13 +195,33 @@ class MainNavigationState extends State<MainNavigation> {
   //   }
   // }
 
+  void _restoreHomeState() {
+    // Get the current state before restoring
+    final currentState = context.read<BookingBloc>().state;
+
+    // If we're coming from search and have search results
+    if (currentState is BookingLoadSuccess) {
+      context.read<BookingBloc>().add(RestorePreviousState());
+    }
+    // If we have cached home data
+    else if (_searchPageKey.currentState?.cachedHomeData != null) {
+      context.read<BookingBloc>().add(
+          RestoreHomeData(_searchPageKey.currentState!.cachedHomeData!)
+      );
+    }
+    // Default fallback
+    else {
+      context.read<BookingBloc>().add(LoadInitialData());
+    }
+  }
+
   Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
       child: InkWell(
-        onTap: () => _onItemTapped(index),
+        onTap: () => onItemTapped(index),
         // onTap: () => setState(() => _currentIndex = index),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
