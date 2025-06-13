@@ -128,5 +128,8 @@
   "payment_method": "Méthode de paiement",
   "manage_your_bookings": "Gérez vos réservations",
   "no_bookings_message": "Vous n'avez pas encore de réservation.",
-  "try_again": "Réessayer"
+  "try_again": "Réessayer",
+  "gender": "Genre",
+  "name_for_seat": "Nom pour le siège",
+  "no_recent_trips": "Aucun voyage récent"
 }

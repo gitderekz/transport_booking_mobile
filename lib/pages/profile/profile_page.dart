@@ -9,6 +9,7 @@ import 'package:transport_booking/models/user.dart';
 import 'package:transport_booking/repositories/user_repository.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 import 'package:transport_booking/widgets/neu_button.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -125,7 +126,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         context,
                         Icons.history,
                         AppLocalizations.of(context)!.translate('booking_history')!,
-                            () => Navigator.pushNamed(context, AppRoutes.tickets),
+                            () {
+                              final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                              mainNav?.onItemTapped(3);
+                              //     Navigator.pushNamed(context, AppRoutes.tickets)
+                            },
                       ),
                       _buildAccountItem(
                         context,

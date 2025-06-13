@@ -128,6 +128,9 @@
   "payment_method": "Njia ya Malipo",
   "manage_your_bookings": "Dhibiti Nafasi Zako",
   "no_bookings_message": "Huna nafasi yoyote bado.",
-  "try_again": "Jaribu Tena"
+  "try_again": "Jaribu Tena",
+  "gender": "Jinsia",
+  "name_for_seat": "Jina la kiti",
+  "no_recent_trips": "Hakuna safari za hivi karibuni"
 
 }

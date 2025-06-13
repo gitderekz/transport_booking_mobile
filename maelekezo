@@ -13,34 +13,251 @@ thibitisha
 risiti
 njia maarufu
 safari za karibuni
+angalia taarifa zaidi
 
 kielekezi cha chini kurasa za ndani
 badili wasifu
 sitisha tiketi
-angalia taarifa zaidi
 
----
-Thanks,
---->now inside ['lib/pages/booking/details_page.dart']  lets add download button and other cool stuffs, to save the receipt just like in confirmation page
---->Also implement delete function in backend but don't delete instead update 'status' column in bookings to 'cancelled'
---->If possible improve the look of ['lib/pages/booking/details_page.dart' and 'lib/pages/tickets/tickets_page.dart']
-GIVEN
---->backend/controllers/bookingController.js
-
-
-
---->lib/pages/booking/details_page.dart
-
-
-
---->lib/pages/booking/details_page.dart
+-------------------------------------------------
 
 
 
 
-1. Lets solve the problem of everytime i after logging it present the tutorial screen even if it is not the first time
-2.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------
+
+I have a python script that analyse my .txt file
+
+BELOW IS EXAMPLE OF MY .txt file
+INPUTS DATA EXPORT
+
+Total Records: 1239
+
+ID: 1260
+Reference Number: 14483
+Date Taken: 2025-05-25
+Grower ID: 10573
+Status: Synced
+Inputs:
+  - Jute Twine: 2 Kg (Value: 18000)
+------------------------------------
+
+ID: 1259
+Reference Number: 14482
+Date Taken: 2025-05-25
+Grower ID: 10572
+Status: Synced
+Inputs:
+  - Jute Twine: 2 Kg (Value: 18000)
+------------------------------------
+
+ID: 1258
+Reference Number: 14481
+Date Taken: 2025-05-25
+Grower ID: 10571
+Status: Synced
+Inputs:
+  - Jute Twine: 2 Kg (Value: 18000)
+------------------------------------
+
+
+
+
+
+BELOW IS MY PYTHON CODE
+
+import csv
+import re
+from collections import defaultdict
+import os
+
+# Optional Excel support
+try:
+    import openpyxl
+    from openpyxl import Workbook
+    excel_enabled = True
+except ImportError:
+    excel_enabled = False
+    print("openpyxl not installed: Excel export will be skipped.")
+
+filename = "ayii-inputs_export_1749647176840.txt"
+
+with open(filename, "r", encoding="utf-8") as f:
+    lines = f.readlines()
+
+records = []
+current = {}
+
+for line in lines:
+    line = line.strip()
+
+    if line.startswith("ID:"):
+        current["id"] = int(line.split(":")[1].strip())
+    elif line.startswith("Reference Number:"):
+        current["ref"] = line.split(":")[1].strip()
+    elif line.startswith("Date Taken:"):
+        current["date"] = line.split(":")[1].strip()
+    elif line.startswith("Grower ID:"):
+        current["grower_id"] = line.split(":")[1].strip()
+    elif line.startswith("Status:"):
+        current["status"] = line.split(":")[1].strip()
+    elif "Value:" in line:
+        # Match pattern like: Urea: 25 Kg (Value: 87500)
+        match = re.search(r'(.+): (\d+) Kg \(Value:\s*([\d]+)\)', line)
+        if match:
+            current["input_type"] = match.group(1).strip()
+            current["quantity"] = int(match.group(2))
+            current["value"] = int(match.group(3))
+    elif line.startswith("-" * 5) and current:
+        records.append(current)
+        current = {}
+
+# Group by grower_id
+grouped = defaultdict(lambda: {"count": 0, "quantity": 0, "value": 0})
+
+for r in records:
+    gid = r["grower_id"]
+    grouped[gid]["count"] += 1
+    grouped[gid]["quantity"] += r.get("quantity", 0)
+    grouped[gid]["value"] += r.get("value", 0)
+
+# Prepare rows
+rows = []
+total_quantity = 0
+total_value = 0
+
+for idx, (gid, data) in enumerate(sorted(grouped.items(), key=lambda x: int(x[0])), 1):
+    rows.append([idx, gid, data["count"], data["quantity"], data["value"]])
+    total_quantity += data["quantity"]
+    total_value += data["value"]
+
+rows.append(["", "TOTAL", "", total_quantity, total_value])
+
+# Output CSV
+csv_file = "grower_summary.csv"
+with open(csv_file, "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Index", "Grower ID", "Total Records", "Total Quantity", "Total Value"])
+    writer.writerows(rows)
+
+print(f"✅ CSV saved: {csv_file}")
+
+# Output Excel
+if excel_enabled:
+    excel_file = "grower_summary.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Grower Summary"
+    ws.append(["Index", "Grower ID", "Total Records", "Total Quantity", "Total Value"])
+    for row in rows:
+        ws.append(row)
+    wb.save(excel_file)
+    print(f"✅ Excel saved: {excel_file}")
+else:
+    print("ℹ️ Skipped Excel export — openpyxl not installed.")
+
+
+
+
+---> This script helps to generate csv and excel files for now with columns [index, grower id, total record,total quantity, total value]
+but i want to add more column for[ input quantity, input names, payload]
+
+The payload should look like this
+{id: null, season_id: 1, debtor_type: 1, debtor_id: 9256, number: 38136, dateTaken: 2025-03-25,
+    inputs: [
+        {"id":11,"package_id":1,"quantity":"1","value":"0"},
+        {id: 11, package_id: 1, quantity: 1, value: 0},
+        {id: 15, package_id: 1, quantity: 1, value: 0},
+        {id: 4, package_id: 1, quantity: 1, value: 0},
+        {id: 5, package_id: 1, quantity: 100, value: 350000},
+    ]
+}
+
+WHERE;
+id = null,
+season_id = 1,
+debtor_type = 1,
+debtor_id = Grower ID,
+number = Reference Number,
+dateTaken = Date Taken
+
+AND ON INPUTS, GIVEN EXAMPLE
+Inputs:
+        - Jute Twine: 2 Kg (Value: 18000)
+Inputs->name = Jute Twine
+Inputs->quantity = 2
+Inputs->unit = Kg
+Inputs->value = 18000
+
+THEREFORE THE PAYLOAD:
+
+inputs: [
+        {
+        "id" = Inputs->name,
+        "package_id" = 1,
+        "quantity" = Inputs>quantity,
+        "value" = Inputs->value
+        },
+    ]
+
+
+
+let us add those columns please
+------------------------------------
 
 
 

@@ -225,7 +225,7 @@ class BookingConfirmationPage extends StatelessWidget {
                       onPressed: () {
                         Navigator.pushNamedAndRemoveUntil(
                           context,
-                          AppRoutes.home,
+                          AppRoutes.initialRoute,
                               (route) => false,
                         );
                       },

@@ -130,7 +130,7 @@ class _StopsSelectionPageState extends State<StopsSelectionPage> {
                       Expanded(
                         child: GlassCard(
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(0/*16*/),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -147,6 +147,7 @@ class _StopsSelectionPageState extends State<StopsSelectionPage> {
                                     controller: _pickupController,
                                     thumbVisibility: true,
                                     child: ListView(
+                                      padding: EdgeInsets.zero,
                                       controller: _pickupController,
                                       children: widget.route.stops.map((stop) {
                                         return RadioListTile<String>(
@@ -187,7 +188,7 @@ class _StopsSelectionPageState extends State<StopsSelectionPage> {
                         Expanded(
                           child: GlassCard(
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(0/*16*/),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -204,6 +205,7 @@ class _StopsSelectionPageState extends State<StopsSelectionPage> {
                                       controller: _dropoffController,
                                       thumbVisibility: true,
                                       child: ListView(
+                                        padding: EdgeInsets.zero,
                                         controller: _dropoffController,
                                         children: widget.route.stops.map((stop) {
                                           if (_pickupStop != null &&

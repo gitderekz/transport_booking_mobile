@@ -378,7 +378,7 @@ class _PaymentPageState extends State<PaymentPage> {
                                             value: _passengerDetails
                                                 .firstWhere((p) => p['seat_number'] == seat,
                                                 orElse: () => {})['passenger_gender'],
-                                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.translate('gender')!),
+                                            decoration: InputDecoration(labelText: AppLocalizations.of(context)!.translate('gender')??'Jinsia'),
                                             items: ['male', 'female', 'prefer not to say']
                                                 .map((g) => DropdownMenuItem(
                                               value: g,

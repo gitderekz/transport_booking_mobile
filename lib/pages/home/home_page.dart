@@ -1,6 +1,8 @@
 // lib/pages/home/home_page.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
 import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
@@ -580,13 +582,16 @@ class _HomePageState extends State<HomePage> {
                       title: Text('${booking.route.origin} → ${booking.route.destination}'),
                       subtitle: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(booking.status),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text('${booking.date} • ${booking.status}')
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(booking.status),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                // child: Text('${booking.date} • ${booking.status}',overflow: TextOverflow.ellipsis,)
+                                child: Text('${DateFormat('yyyy-MM-dd HH:mm').format(booking.date)} • ${booking.status}',overflow: TextOverflow.ellipsis,)
+                            ),
                           ),
                         ],
                       ),

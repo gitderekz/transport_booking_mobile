@@ -4,6 +4,7 @@ import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
 import 'package:transport_booking/utils/localization/app_localizations.dart';
 import 'package:transport_booking/widgets/glass_card.dart';
+import 'package:transport_booking/widgets/main_navigation.dart';
 
 class AllRoutesPage extends StatefulWidget {
   const AllRoutesPage({super.key});
@@ -42,7 +43,7 @@ class _AllRoutesPageState extends State<AllRoutesPage> {
         // Main content
         BlocBuilder<BookingBloc, BookingState>(
           builder: (context, state) {
-            print('[UI] Current state: $state'); // 👈 Log state
+            print('[UI] Current state: ${state.toString()}'); // 👈 Log state
             if (state is InitialDataLoaded || state is AllRoutesLoaded) {
               final routes = state is InitialDataLoaded
                   ? state.allRoutes
@@ -73,13 +74,17 @@ class _AllRoutesPageState extends State<AllRoutesPage> {
                       subtitle: Text('Tsh ${route.basePrice.toStringAsFixed(2)}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.search,
-                          arguments: {
-                            'prefilledRoute': route,
-                          },
-                        );
+                        final mainNav = context.findAncestorStateOfType<MainNavigationState>();
+                        mainNav?.handleSearchArguments({
+                          'prefilledRoute': route,
+                        });
+                        // Navigator.pushNamed(
+                        //   context,
+                        //   AppRoutes.search,
+                        //   arguments: {
+                        //     'prefilledRoute': route,
+                        //   },
+                        // );
                       },
                     ),
                   );
