@@ -22,19 +22,47 @@ sitisha tiketi
 -------------------------------------------------
 
 
+Thank you so much now lets solve the problem
+When refreshing the page and call endpoint; /api/transports/1/routes/1/seats
+
+WHERE IT CALLS API THROUGH
+  Future<Either<Failure, List<List<Map<String, dynamic>>>>> getSeatArrangement({
+    required String transportId,
+    String? routeId,
+  }) async {
+    try {
+      final response = await apiService.get(
+          routeId != null
+              ? '/transports/$transportId/routes/$routeId/seats'
+              : '/transports/$transportId/seats'
+      );
+
+      if (response['data'] == null) {
+        return Left(Failure(message: 'No seat data available'));
+      }
+
+      print('MAJIBU: ${response.toString()}');
+      // Parse the seat arrangement
+      final seatArrangement = (response['data'] as List)
+          .map((row) => (row as List).map((seat) => Map<String, dynamic>.from(seat)).toList())
+          .toList();
+
+      return Right(seatArrangement);
+    } catch (e) {
+      return Left(Failure(message: e.toString()));
+    }
+  }
+
+AND I GET PRINTOUT
+print('MAJIBU: ${response.toString()}'); = MAJIBU: {success: true, data: {transport_id: 1, route_id: 1, seat_layout: {rows: 10, columns: 5, layout: 3-2, seats: [{number: 1A}, {number: 1B}, {number: 1C}, {number: 1D}, {number: 2A}, {number: 2B}, {number: 2C}, {number: 2D}, {number: 3A}, {number: 3B}, {number: 3C}, {number: 3D}, {number: 4A}, {number: 4B}, {number: 4C}, {number: 4D}, {number: 5A}, {number: 5B}, {number: 5C}, {number: 5D}, {number: 6A}, {number: 6B}, {number: 6C}, {number: 6D}, {number: 7A}, {number: 7B}, {number: 7C}, {number: 7D}, {number: 8A}, {number: 8B}, {number: 8C}, {number: 8D}, {number: 9A}, {number: 9B}, {number: 9C}, {number: 9D}, {number: 10A}, {number: 10B}, {number: 10C}, {number: 10D}]}, seat_arrangement: [[{seat_number: 1A, booked: true, passenger_name: John Doe, passenger_gender: male, pickup_stop_name: Dar es Salaam, dropoff_stop_name: Singida}, {seat_number: 1B, booked: true, passenger_name: John Doe, passenger_gender: male, pickup_stop_name: Dar es Salaam, dropoff_stop_name: Singida}, {seat_number: 1C, booked: true, passenger_name: John Doe, passenger_gender: male, pickup_stop_name: Dar es Salaam, dropoff_stop_name: Singida}, {seat_number: 1D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 1E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 2A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 2B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 2C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 2D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 2E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 3A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 3B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 3C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 3D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 3E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 4A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 4B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 4C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 4D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 4E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 5A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 5B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 5C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 5D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 5E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 6A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 6B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 6C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 6D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 6E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 7A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 7B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 7C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 7D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 7E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 8A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 8B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 8C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 8D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 8E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 9A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 9B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 9C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 9D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 9E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}], [{seat_number: 10A, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 10B, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 10C, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 10D, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}, {seat_number: 10E, booked: false, passenger_name: null, passenger_gender: null, pickup_stop_name: null, dropoff_stop_name: null}]]}}
 
 
 
 
+THIS CAUSES AN ERROR _type<String, dynamic> is not a subtype of type Lit<dynamic>
 
 
-
-
-
-
-
-
-
+GIVEN lib/config/routes.dart
 
 
 

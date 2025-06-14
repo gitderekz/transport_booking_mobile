@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:transport_booking/blocs/auth/auth_bloc.dart';
 import 'package:transport_booking/blocs/booking/booking_bloc.dart';
 import 'package:transport_booking/config/routes.dart';
@@ -20,6 +21,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final RefreshController _refreshController = RefreshController(initialRefresh: false);
   @override
   void initState() {
     super.initState();
@@ -64,47 +66,78 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    _loadData();
+    // try {
+    //   context.read<BookingBloc>().add(LoadInitialData());
+    //   await context.read<BookingBloc>().stream.firstWhere(
+    //           (state) => state is HomeDataLoaded || state is BookingError
+    //   );
+    //
+    //   if (context.read<BookingBloc>().state is BookingError) {
+    //     _refreshController.refreshFailed();
+    //   } else {
+    //     _refreshController.refreshCompleted();
+    //   }
+    // } catch (e) {
+    //   _refreshController.refreshFailed();
+    // }
+    _refreshController.refreshCompleted();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<BookingBloc, BookingState>(
       builder: (context, state) {
-        return CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 320,
-              floating: true,
-              pinned: true,
-              flexibleSpace: FlexibleSpaceBar(
-                // title: Text(AppLocalizations.of(context)!.translate('home')!),
-                background: _buildProfileHeader(context),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildTransportTypes(context),
-                    const SizedBox(height: 24),
-                    _buildPopularRoutes(context),
-                    const SizedBox(height: 24),
-                    _buildRecentBookings(context),
-                    const SizedBox(height: 80),
-                    // _buildTransportTypes(context),
-                    // const SizedBox(height: 24),
-                    // BlocBuilder<BookingBloc, BookingState>(
-                    //   builder: (context, state) => _buildPopularRoutes(context),
-                    // ),
-                    // const SizedBox(height: 24),
-                    // BlocBuilder<BookingBloc, BookingState>(
-                    //   builder: (context, state) => _buildRecentBookings(context),
-                    // ),
-                    // const SizedBox(height: 80),
-                  ],
+        return SmartRefresher(
+          controller: _refreshController,
+          onRefresh: _onRefresh,
+          header: ClassicHeader(
+            completeText: 'Refresh complete',
+            failedText: 'Refresh failed',
+            idleText: 'Pull down to refresh',
+            releaseText: 'Release to refresh',
+            refreshingText: 'Refreshing...',
+            // textStyle: Theme.of(context).textTheme.bodyMedium,
+          ),
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 320,
+                floating: true,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  // title: Text(AppLocalizations.of(context)!.translate('home')!),
+                  background: _buildProfileHeader(context),
                 ),
               ),
-            ),
-          ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildTransportTypes(context),
+                      const SizedBox(height: 24),
+                      _buildPopularRoutes(context),
+                      const SizedBox(height: 24),
+                      _buildRecentBookings(context),
+                      const SizedBox(height: 80),
+                      // _buildTransportTypes(context),
+                      // const SizedBox(height: 24),
+                      // BlocBuilder<BookingBloc, BookingState>(
+                      //   builder: (context, state) => _buildPopularRoutes(context),
+                      // ),
+                      // const SizedBox(height: 24),
+                      // BlocBuilder<BookingBloc, BookingState>(
+                      //   builder: (context, state) => _buildRecentBookings(context),
+                      // ),
+                      // const SizedBox(height: 80),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }
     );

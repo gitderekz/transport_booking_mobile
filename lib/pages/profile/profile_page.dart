@@ -156,6 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         isLogout: true,
                       ),
+                      Center(child: Padding(padding: EdgeInsets.all(8.0),child: Text('V1.0.2'),))
                     ],
                   ),
                 ),

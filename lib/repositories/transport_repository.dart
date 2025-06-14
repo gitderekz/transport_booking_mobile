@@ -34,6 +34,22 @@ class TransportRepository {
     }
   }
 
+  Future<Either<Failure, List<String>>> getAvailableSeats({
+    required String routeId,
+    required String transportId,
+  }) async {
+    try {
+      final response = await apiService.get(
+        '/transports/$transportId/routes/$routeId/seats/available',
+      );
+      final List<dynamic> data = response['data'] ?? [];
+      return Right(data.map((e) => e.toString()).toList());
+    } catch (e) {
+      return Left(Failure(message: e.toString()));
+    }
+  }
+
+
   Future<Either<Failure, List<Route>>> searchRoutes({
     required String from,
     required String to,
@@ -69,22 +85,6 @@ class TransportRepository {
     }
   }
 
-  Future<Either<Failure, List<String>>> getAvailableSeats({
-    required String routeId,
-    required String transportId,
-  }) async {
-    try {
-      final response = await apiService.get(
-        '/transports/$transportId/routes/$routeId/seats/available',
-      );
-      final List<dynamic> data = response['data'] ?? [];
-      return Right(data.map((e) => e.toString()).toList());
-    } catch (e) {
-      return Left(Failure(message: e.toString()));
-    }
-  }
-
-
   Future<Either<Failure, List<Stop>>> getStopsByRoute(String routeId) async {
     try {
       final response = await apiService.get('/stops/route/$routeId');
@@ -102,6 +102,57 @@ class TransportRepository {
       final List<dynamic> data = response['data'] ?? [];
       final stops = data.map((json) => Stop.fromJson(json)).toList();
       return Right(stops);
+    } catch (e) {
+      return Left(Failure(message: e.toString()));
+    }
+  }
+
+  // Future<Either<Failure, List<List<Map<String, dynamic>>>>> getSeatArrangement({
+  //   required String transportId,
+  //   String? routeId,
+  // }) async {
+  //   try {
+  //     final response = await apiService.get(
+  //         routeId != null
+  //             ? '/transports/$transportId/routes/$routeId/seats'
+  //             : '/transports/$transportId/seats'
+  //     );
+  //     final List<dynamic> data = response['data'] ?? [];
+  //     return Right(List<List<Map<String, dynamic>>>.from(data));
+  //   } catch (e) {
+  //     return Left(Failure(message: e.toString()));
+  //   }
+  // }
+
+  Future<Either<Failure, List<List<Map<String, dynamic>>>>> getSeatArrangement({
+    required String transportId,
+    String? routeId,
+  }) async {
+    try {
+      final response = await apiService.get(
+          routeId != null
+              ? '/transports/$transportId/routes/$routeId/seats'
+              : '/transports/$transportId/seats'
+      );
+
+      if (response['data'] == null) {
+        return Left(Failure(message: 'No seat data available'));
+      }
+
+      // Handle the nested response structure
+      final responseData = response['data'] as Map<String, dynamic>;
+
+      // Get the seat_arrangement array from the response
+      final seatArrangementData = responseData['seat_arrangement'] as List;
+
+      // Parse the seat arrangement
+      final seatArrangement = seatArrangementData
+          .map((row) => (row as List)
+          .map((seat) => Map<String, dynamic>.from(seat))
+          .toList())
+          .toList();
+
+      return Right(seatArrangement);
     } catch (e) {
       return Left(Failure(message: e.toString()));
     }
